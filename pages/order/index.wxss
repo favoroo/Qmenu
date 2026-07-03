@@ -235,3 +235,308 @@
   font-size: 24rpx;
   color: var(--text-light);
 }
+
+/* ==========================================================================
+   7. 菜谱详情弹窗 (Recipe Detail Modal & Timers)
+   ========================================================================== */
+.detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  z-index: 999;
+  transition: all 0.3s ease;
+}
+
+.detail-popup-sheet {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 92vh;
+  background-color: #ffffff;
+  border-radius: 40rpx 40rpx 0 0;
+  z-index: 1000;
+  box-shadow: 0 -12rpx 40rpx rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.detail-close-btn {
+  position: absolute;
+  right: 32rpx;
+  top: 32rpx;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  font-size: 38rpx;
+  z-index: 1010;
+  font-weight: 300;
+  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.detail-close-btn:active {
+  background-color: rgba(0, 0, 0, 0.5);
+  transform: scale(0.9);
+}
+
+.detail-content-scroll {
+  width: 100%;
+  height: 100%;
+}
+
+.detail-cover-image {
+  width: 100%;
+  height: 520rpx;
+  background-color: var(--bg-light);
+}
+
+.detail-info-container {
+  padding: 40rpx 36rpx 80rpx 36rpx;
+}
+
+.detail-title-row {
+  width: 100%;
+}
+
+.detail-name {
+  font-size: 38rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.detail-category-badge {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  font-size: 20rpx;
+  font-weight: 600;
+  padding: 4rpx 16rpx;
+  border-radius: 8rpx;
+  margin-left: 20rpx;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.detail-price-row {
+  color: var(--danger-color);
+  font-weight: bold;
+}
+
+.detail-price-symbol {
+  font-size: 28rpx;
+  margin-right: 4rpx;
+}
+
+.detail-price-num {
+  font-size: 44rpx;
+}
+
+.detail-divider {
+  height: 1rpx;
+  background: linear-gradient(to right, transparent, var(--border-color) 20%, var(--border-color) 80%, transparent);
+  margin: 36rpx 0;
+  width: 100%;
+}
+
+.detail-section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 20rpx;
+}
+
+.private-badge {
+  font-size: 18rpx;
+  color: var(--text-light);
+  background-color: var(--bg-light);
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+  font-weight: normal;
+  border: 1rpx solid var(--border-color);
+}
+
+.detail-desc-box {
+  width: 100%;
+}
+
+.detail-desc-text {
+  font-size: 26rpx;
+  color: var(--text-sub);
+  line-height: 1.5;
+  display: block;
+}
+
+/* 用料表格样式 */
+.detail-materials-table {
+  width: 100%;
+  background-color: var(--bg-light);
+  border-radius: 20rpx;
+  padding: 24rpx 30rpx;
+  border: 1rpx solid rgba(226, 232, 240, 0.8);
+}
+
+.detail-material-row {
+  width: 100%;
+  padding: 18rpx 0;
+  border-bottom: 1rpx dashed rgba(226, 232, 240, 0.6);
+}
+
+.detail-material-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-material-row:first-child {
+  padding-top: 0;
+}
+
+.detail-mat-name {
+  font-size: 28rpx;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.detail-mat-dots {
+  border-bottom: 1rpx dotted rgba(148, 163, 184, 0.2);
+  margin: 0 16rpx;
+  height: 20rpx;
+}
+
+.detail-mat-weight {
+  font-size: 28rpx;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+/* 步骤时间轴样式 */
+.detail-steps-timeline {
+  width: 100%;
+  margin-top: 10rpx;
+}
+
+.detail-step-timeline-item {
+  width: 100%;
+}
+
+.timeline-left {
+  position: relative;
+  width: 50rpx;
+  margin-right: 24rpx;
+  align-self: stretch;
+}
+
+.timeline-node {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-size: 24rpx;
+  font-weight: bold;
+  z-index: 2;
+  box-shadow: 0 2rpx 8rpx rgba(45, 90, 67, 0.2);
+}
+
+.timeline-line {
+  position: absolute;
+  top: 44rpx;
+  bottom: 0;
+  left: 21rpx;
+  width: 2rpx;
+  background-color: var(--border-color);
+  z-index: 1;
+}
+
+.timeline-right {
+  padding-bottom: 30rpx;
+}
+
+.timeline-step-header {
+  width: 100%;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-step-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: var(--text-main);
+  line-height: 48rpx;
+}
+
+/* 交互烹饪定时器 */
+.interactive-timer-btn {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border: 1rpx solid rgba(45, 90, 67, 0.25);
+  padding: 0 18rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  box-shadow: 0 2rpx 6rpx rgba(45, 90, 67, 0.04);
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.interactive-timer-btn:active {
+  transform: scale(0.95);
+}
+
+.timer-emoji {
+  font-size: 22rpx;
+  margin-right: 6rpx;
+  line-height: 1;
+}
+
+.timer-btn-text {
+  line-height: 1;
+}
+
+.interactive-timer-btn.running {
+  background-color: #FEF3C7;
+  color: #D97706;
+  border-color: rgba(217, 119, 6, 0.35);
+  animation: pulse-timer 1.5s infinite ease-in-out;
+}
+
+.interactive-timer-btn.finished {
+  background-color: #DEF7EC;
+  color: #03543F;
+  border-color: rgba(3, 84, 63, 0.35);
+  box-shadow: 0 2rpx 10rpx rgba(3, 84, 63, 0.1);
+}
+
+@keyframes pulse-timer {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); opacity: 0.85; }
+  100% { transform: scale(1); }
+}
+
+.timeline-step-desc {
+  font-size: 26rpx;
+  color: var(--text-sub);
+  line-height: 1.5;
+  display: block;
+}
+
+.timeline-step-image {
+  width: 100%;
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.03);
+}

@@ -1,15 +1,6 @@
 <view class="container">
   <!-- 1. Header Section -->
   <view class="header-section">
-    <view class="store-info flex-row">
-      <view class="store-meta flex-1">
-        <view class="store-title-row flex-row">
-          <view class="store-name">Q 菜单</view>
-          <view class="cuisine-type-badge">私房菜</view>
-        </view>
-      </view>
-    </view>
-
     <!-- Search Bar -->
     <view class="search-bar-container">
       <view class="search-bar flex-row">
@@ -167,10 +158,10 @@
     <view class="random-count-selector flex-row align-center justify-center">
       <text class="selector-label">选择菜数：</text>
       <view class="selector-options flex-row">
-        <view class="selector-option {{randomCount === 1 ? 'active' : ''}}" bindtap="setRandomCount" data-count="1">1个</view>
-        <view class="selector-option {{randomCount === 2 ? 'active' : ''}}" bindtap="setRandomCount" data-count="2">2个</view>
-        <view class="selector-option {{randomCount === 3 ? 'active' : ''}}" bindtap="setRandomCount" data-count="3">3个</view>
-        <view class="selector-option {{randomCount === 4 ? 'active' : ''}}" bindtap="setRandomCount" data-count="4">4个</view>
+        <view class="selector-option {{randomCount === 1 ? 'active' : ''}}" bindtap="setRandomCount" data-count="1">1</view>
+        <view class="selector-option {{randomCount === 2 ? 'active' : ''}}" bindtap="setRandomCount" data-count="2">2</view>
+        <view class="selector-option {{randomCount === 3 ? 'active' : ''}}" bindtap="setRandomCount" data-count="3">3</view>
+        <view class="selector-option {{randomCount === 4 ? 'active' : ''}}" bindtap="setRandomCount" data-count="4">4</view>
       </view>
     </view>
 
@@ -322,5 +313,32 @@
         </view>
       </view>
     </block>
+  </view>
+
+  <!-- 8. Move to Category Modal -->
+  <view class="modal-overlay" wx:if="{{showMoveCategoryModal}}" bindtap="closeMoveCategoryModal"></view>
+  <view class="move-category-modal-card" wx:if="{{showMoveCategoryModal}}">
+    <view class="modal-close" bindtap="closeMoveCategoryModal">×</view>
+    <view class="modal-title">移动到分类</view>
+
+    <block wx:if="{{movingRecipe}}">
+      <view class="move-recipe-hint flex-row align-center">
+        <image class="move-recipe-image" src="{{movingRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+        <text class="move-recipe-name">{{movingRecipe.name}}</text>
+      </view>
+    </block>
+
+    <scroll-view class="move-category-list" scroll-y>
+      <view
+        class="move-category-item {{movingRecipe && movingRecipe.categoryId === item.id ? 'current' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="id"
+        bindtap="onMoveCategorySelect"
+        data-id="{{item.id}}"
+      >
+        <text class="move-category-name">{{item.name}}</text>
+        <text class="move-category-current-badge" wx:if="{{movingRecipe && movingRecipe.categoryId === item.id}}">当前</text>
+      </view>
+    </scroll-view>
   </view>
 </view>

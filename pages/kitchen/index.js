@@ -36,7 +36,11 @@ Page({
     selectedRecipeCategoryName: '',
     activeTimerStepIndex: -1,
     timerSecondsLeft: 0,
-    formattedTimeLeft: '00:00'
+    formattedTimeLeft: '00:00',
+
+    // Move to Category Modal variables
+    showMoveCategoryModal: false,
+    movingRecipe: null
   },
 
   onLoad(options) {
@@ -59,14 +63,6 @@ Page({
     this.loadData();
     // Reset cart popup
     this.setData({ showCartPopup: false });
-
-    // Check if there is a pending recipe detail request from other pages
-    const app = getApp();
-    if (app.globalData && app.globalData.viewRecipeId) {
-      const viewRecipeId = app.globalData.viewRecipeId;
-      app.globalData.viewRecipeId = null; // Clear it immediately
-      this.openRecipeDetailById(viewRecipeId);
-    }
   },
 
   onPullDownRefresh() {
@@ -395,12 +391,66 @@ Page({
     wx.vibrateShort({ type: 'medium' });
     
     wx.showActionSheet({
-      itemList: ['编辑菜谱'],
+      itemList: ['编辑菜谱', '移动到分类'],
       success(res) {
         if (res.tapIndex === 0) {
           // Edit recipe
           wx.navigateTo({
             url: `/pages/recipe-add/index?id=${recipe.id}`
+          });
+        } else if (res.tapIndex === 1) {
+          // Move to category - open category picker
+          self.setData({
+            movingRecipe: recipe,
+            showMoveCategoryModal: true
+          });
+        }
+      }
+    });
+  },
+
+  // --- Move to Category ---
+  closeMoveCategoryModal() {
+    this.setData({
+      showMoveCategoryModal: false,
+      movingRecipe: null
+    });
+  },
+
+  onMoveCategorySelect(e) {
+    const targetCategoryId = e.currentTarget.dataset.id;
+    const recipe = this.data.movingRecipe;
+
+    if (!recipe) return;
+
+    // If selecting current category, no need to move
+    if (recipe.categoryId === targetCategoryId) {
+      wx.showToast({ title: '已在该分类中', icon: 'none' });
+      this.closeMoveCategoryModal();
+      return;
+    }
+
+    const targetCategory = this.data.categories.find(c => c.id === targetCategoryId);
+    const targetName = targetCategory ? targetCategory.name : '未知分类';
+
+    const self = this;
+    wx.showModal({
+      title: '确认移动',
+      content: `将「${recipe.name}」移动到「${targetName}」？`,
+      confirmColor: '#2D5A43',
+      success(modalRes) {
+        if (modalRes.confirm) {
+          db.updateRecipe({
+            id: recipe.id,
+            categoryId: targetCategoryId
+          });
+
+          self.closeMoveCategoryModal();
+          self.loadData();
+
+          wx.showToast({
+            title: `已移至「${targetName}」`,
+            icon: 'success'
           });
         }
       }
@@ -465,41 +515,7 @@ Page({
     }
   },
 
-  openRecipeDetailById(recipeId) {
-    const recipe = this.data.recipes.find(r => r.id === recipeId);
-    if (!recipe) {
-      wx.showToast({
-        title: '该菜谱已不存在',
-        icon: 'none'
-      });
-      return;
-    }
-    if (recipe.status !== 1) {
-      wx.showToast({
-        title: '该菜谱已下架',
-        icon: 'none'
-      });
-      return;
-    }
-    const category = this.data.categories.find(c => c.id === recipe.categoryId);
-    const categoryName = category ? category.name : '默认分类';
-    this.setData({
-      activeCategoryId: recipe.categoryId,
-      activeCategoryName: categoryName,
-      selectedRecipe: recipe,
-      selectedRecipeCategoryName: categoryName,
-      showDetailModal: true,
-      activeTimerStepIndex: -1,
-      timerSecondsLeft: 0,
-      formattedTimeLeft: '00:00'
-    }, () => {
-      this.filterRecipes();
-    });
-    if (stepTimerInterval) {
-      clearInterval(stepTimerInterval);
-      stepTimerInterval = null;
-    }
-  },
+
 
   closeRecipeDetail() {
     this.setData({

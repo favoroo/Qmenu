@@ -85,4 +85,102 @@
     <view class="empty-subtitle">快去厨房挑选心仪的美味吧！</view>
     <button class="btn-primary margin-top-lg" bindtap="goToKitchen">去厨房逛逛</button>
   </view>
+
+  <!-- Recipe Detail Modal (Overlay & Sheet) -->
+  <view class="detail-overlay" wx:if="{{showDetailModal}}" bindtap="closeRecipeDetail"></view>
+  <view class="detail-popup-sheet flex-col {{showDetailModal ? 'slide-up' : ''}}" wx:if="{{showDetailModal}}">
+    <block wx:if="{{selectedRecipe}}">
+      <!-- Close Button -->
+      <view class="detail-close-btn flex-row justify-center align-center" bindtap="closeRecipeDetail">×</view>
+      
+      <!-- Scrollable content -->
+      <scroll-view class="detail-content-scroll flex-1" scroll-y>
+        <!-- Cover Image -->
+        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+        
+        <view class="detail-info-container">
+          <!-- Title and Category badge -->
+          <view class="detail-title-row flex-row align-center wrap">
+            <text class="detail-name">{{selectedRecipe.name}}</text>
+            <text class="detail-category-badge">{{selectedRecipeCategoryName}}</text>
+          </view>
+          
+          <!-- Price -->
+          <view class="detail-price-row margin-top-sm">
+            <text class="detail-price-symbol">¥</text>
+            <text class="detail-price-num">{{selectedRecipe.price}}</text>
+          </view>
+          
+          <!-- Description -->
+          <view class="detail-desc-box margin-top-md" wx:if="{{selectedRecipe.desc}}">
+            <view class="detail-section-title">菜品介绍</view>
+            <text class="detail-desc-text">{{selectedRecipe.desc}}</text>
+          </view>
+          
+          <!-- Ingredients (用料) -->
+          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.materials && selectedRecipe.materials.length > 0 && (selectedRecipe.materialsPublic || isAdmin)}}">
+            <view class="detail-divider"></view>
+            <view class="detail-section-title flex-row align-center justify-between">
+              <text>食材清单</text>
+              <text class="private-badge" wx:if="{{!selectedRecipe.materialsPublic}}">仅自己可见</text>
+            </view>
+            
+            <view class="detail-materials-table">
+              <view class="detail-material-row flex-row justify-between align-center" wx:for="{{selectedRecipe.materials}}" wx:key="index">
+                <text class="detail-mat-name">{{item.name}}</text>
+                <view class="detail-mat-dots flex-1"></view>
+                <text class="detail-mat-weight">{{item.weight}}</text>
+              </view>
+            </view>
+          </block>
+          
+          <!-- Cooking Steps (做法) -->
+          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.steps && selectedRecipe.steps.length > 0 && (selectedRecipe.stepsPublic || isAdmin)}}">
+            <view class="detail-divider"></view>
+            <view class="detail-section-title flex-row align-center justify-between">
+              <text>烹饪步骤</text>
+              <text class="private-badge" wx:if="{{!selectedRecipe.stepsPublic}}">仅自己可见</text>
+            </view>
+            
+            <view class="detail-steps-timeline">
+              <view class="detail-step-timeline-item flex-row align-start" wx:for="{{selectedRecipe.steps}}" wx:key="index">
+                <!-- Left index and line -->
+                <view class="timeline-left flex-col align-center">
+                  <view class="timeline-node flex-row justify-center align-center">{{index + 1}}</view>
+                  <view class="timeline-line" wx:if="{{index < selectedRecipe.steps.length - 1}}"></view>
+                </view>
+                
+                <!-- Right content -->
+                <view class="timeline-right flex-col flex-1 margin-bottom-lg">
+                  <!-- Step Timer -->
+                  <view class="timeline-step-header flex-row justify-between align-center" wx:if="{{item.timer > 0}}">
+                    <text class="timeline-step-title">步骤 {{index + 1}}</text>
+                    <!-- Interactive Timer Badge -->
+                    <view 
+                      class="interactive-timer-btn flex-row align-center {{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? 'running' : 'finished') : ''}}" 
+                      catchtap="toggleStepTimer" 
+                      data-index="{{index}}"
+                      data-minutes="{{item.timer}}"
+                    >
+                      <text class="timer-emoji">⏱️</text>
+                      <text class="timer-btn-text">{{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? '剩余 ' + formattedTimeLeft : '已完成！') : '开始计时 (' + item.timer + '分钟)'}}</text>
+                    </view>
+                  </view>
+                  <view class="timeline-step-header" wx:else>
+                    <text class="timeline-step-title">步骤 {{index + 1}}</text>
+                  </view>
+                  
+                  <!-- Step description -->
+                  <text class="timeline-step-desc margin-top-xs">{{item.desc}}</text>
+                  
+                  <!-- Step Image -->
+                  <image class="timeline-step-image margin-top-sm" src="{{item.image}}" mode="widthFix" wx:if="{{item.image}}"></image>
+                </view>
+              </view>
+            </view>
+          </block>
+        </view>
+      </scroll-view>
+    </block>
+  </view>
 </view>

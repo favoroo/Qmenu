@@ -3,19 +3,11 @@
   <view class="add-section card">
     <view class="section-title">添加新分类</view>
     <view class="form-row flex-row">
-      <input 
-        class="form-input flex-1 name-input" 
-        placeholder="分类名称，如：精品炒菜" 
-        value="{{newCatName}}" 
+      <input
+        class="form-input flex-1 name-input"
+        placeholder="分类名称，如：精品炒菜"
+        value="{{newCatName}}"
         bindinput="onNameInput"
-        placeholder-class="input-placeholder"
-      />
-      <input 
-        class="form-input sort-input" 
-        type="number" 
-        placeholder="排序" 
-        value="{{newCatSort}}" 
-        bindinput="onSortInput"
         placeholder-class="input-placeholder"
       />
       <button class="btn-primary btn-add" bindtap="handleAddCategory">添加</button>
@@ -26,41 +18,47 @@
   <view class="list-section card">
     <view class="section-title flex-row justify-between">
       <text>分类列表</text>
-      <text class="sub-tip">排序权重越小越靠前</text>
+      <text class="sub-tip">长按拖动可调整顺序</text>
     </view>
 
-    <view class="categories-list">
-      <view class="category-row flex-row justify-between align-center" wx:for="{{categories}}" wx:key="id">
+    <movable-area
+      class="categories-drag-area"
+      style="width: 100%; height: {{dragList.length > 0 ? dragList.length * itemHeight : 0}}px;"
+    >
+      <movable-view
+        wx:for="{{dragList}}"
+        wx:key="id"
+        class="category-row flex-row justify-between align-center"
+        style="width: 100%; height: {{itemHeight}}px; z-index: {{index == moveId ? 10 : 1}}; opacity: {{index == moveId ? 0.9 : 1}};"
+        x="0"
+        y="{{item.y}}"
+        direction="vertical"
+        damping="40"
+        data-moveid="{{index}}"
+        bindchange="onDragChange"
+        bindtouchend="onDragEnd"
+      >
         <view class="cat-info flex-row align-center">
-          <text class="cat-sort-badge">{{item.sort || 0}}</text>
+          <view class="drag-handle">
+            <view class="drag-handle-bar"></view>
+            <view class="drag-handle-bar"></view>
+            <view class="drag-handle-bar"></view>
+          </view>
           <text class="cat-name">{{item.name}}</text>
           <text class="default-badge" wx:if="{{item.id === 'cat_default'}}">默认</text>
         </view>
 
         <view class="cat-actions flex-row align-center">
-          <!-- Position Sorters -->
-          <view 
-            class="sorter-btn up-arrow {{index === 0 ? 'disabled' : ''}}" 
-            bindtap="moveUp" 
-            data-index="{{index}}"
-          ></view>
-          <view 
-            class="sorter-btn down-arrow {{index === categories.length - 1 ? 'disabled' : ''}}" 
-            bindtap="moveDown" 
-            data-index="{{index}}"
-          ></view>
-
-          <!-- Delete Action -->
-          <view 
-            class="delete-btn flex-row justify-center align-center {{item.id === 'cat_default' ? 'disabled' : ''}}" 
-            bindtap="handleDeleteCategory" 
-            data-id="{{item.id}}" 
+          <view
+            class="delete-btn flex-row justify-center align-center {{item.id === 'cat_default' ? 'disabled' : ''}}"
+            catchtap="handleDeleteCategory"
+            data-id="{{item.id}}"
             data-name="{{item.name}}"
           >
             删除
           </view>
         </view>
-      </view>
-    </view>
+      </movable-view>
+    </movable-area>
   </view>
 </view>

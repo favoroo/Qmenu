@@ -2,11 +2,26 @@ const db = require('../../utils/db.js');
 
 Page({
   data: {
-    orders: []
+    orders: [],
+    showDetailModal: false,
+    selectedRecipe: null,
+    selectedRecipeCategoryName: '',
+    activeTimerStepIndex: -1,
+    timerSecondsLeft: 0,
+    formattedTimeLeft: '00:00',
+    isAdmin: true
   },
 
   onShow() {
     this.loadOrders();
+  },
+
+  onHide() {
+    this.stopStepTimer();
+  },
+
+  onUnload() {
+    this.stopStepTimer();
   },
 
   onPullDownRefresh() {
@@ -109,18 +124,119 @@ Page({
     });
   },
 
-  // View recipe detail of the selected dish
+  // View recipe detail of the selected dish (directly open popup modal on the order page)
   viewRecipeDetail(e) {
     const recipeId = e.currentTarget.dataset.recipeId;
     if (!recipeId) return;
 
-    // Set the target recipeId in globalData
-    const app = getApp();
-    app.globalData.viewRecipeId = recipeId;
+    const recipes = db.getRecipes();
+    const recipe = recipes.find(r => r.id === recipeId);
+    if (!recipe) {
+      wx.showToast({
+        title: '该菜谱已不存在',
+        icon: 'none'
+      });
+      return;
+    }
+    if (recipe.status !== 1) {
+      wx.showToast({
+        title: '该菜谱已下架',
+        icon: 'none'
+      });
+      return;
+    }
 
-    // Redirect to the kitchen page
-    wx.switchTab({
-      url: '/pages/kitchen/index'
+    const categories = db.getCategories();
+    const category = categories.find(c => c.id === recipe.categoryId);
+    const categoryName = category ? category.name : '默认分类';
+
+    this.setData({
+      selectedRecipe: recipe,
+      selectedRecipeCategoryName: categoryName,
+      showDetailModal: true,
+      activeTimerStepIndex: -1,
+      timerSecondsLeft: 0,
+      formattedTimeLeft: '00:00'
     });
+    this.stopStepTimer();
+  },
+
+  closeRecipeDetail() {
+    this.setData({
+      showDetailModal: false,
+      selectedRecipe: null
+    });
+    this.stopStepTimer();
+  },
+
+  toggleStepTimer(e) {
+    const index = e.currentTarget.dataset.index;
+    const minutes = e.currentTarget.dataset.minutes;
+    
+    if (this.data.activeTimerStepIndex === index) {
+      this.stopStepTimer();
+      wx.showToast({
+        title: '计时已取消',
+        icon: 'none'
+      });
+      return;
+    }
+    
+    this.stopStepTimer();
+    
+    const seconds = minutes * 60;
+    this.setData({
+      activeTimerStepIndex: index,
+      timerSecondsLeft: seconds,
+      formattedTimeLeft: this.formatSeconds(seconds)
+    });
+    
+    wx.showToast({
+      title: '开始计时',
+      icon: 'success'
+    });
+    
+    const self = this;
+    this.stepTimerInterval = setInterval(() => {
+      const left = self.data.timerSecondsLeft - 1;
+      if (left <= 0) {
+        self.stopStepTimer();
+        
+        wx.vibrateLong();
+        setTimeout(() => {
+          wx.vibrateLong();
+        }, 500);
+        
+        wx.showModal({
+          title: '烹饪定时提醒',
+          content: `第 ${index + 1} 步：已完成计时！`,
+          confirmColor: '#2D5A43',
+          showCancel: false
+        });
+      } else {
+        self.setData({
+          timerSecondsLeft: left,
+          formattedTimeLeft: self.formatSeconds(left)
+        });
+      }
+    }, 1000);
+  },
+
+  stopStepTimer() {
+    if (this.stepTimerInterval) {
+      clearInterval(this.stepTimerInterval);
+      this.stepTimerInterval = null;
+    }
+    this.setData({
+      activeTimerStepIndex: -1,
+      timerSecondsLeft: 0,
+      formattedTimeLeft: '00:00'
+    });
+  },
+
+  formatSeconds(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = (sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   }
 });
