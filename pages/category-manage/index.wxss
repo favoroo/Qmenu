@@ -124,3 +124,163 @@
   color: var(--text-light);
   font-size: 26rpx;
 }
+
+/* ============ Mode Toggle Tabs ============ */
+.mode-tabs {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  padding: 8rpx;
+  margin-bottom: 24rpx;
+  border: 1rpx solid var(--border-color);
+  gap: 8rpx;
+}
+
+.mode-tab {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-sub);
+  border-radius: 12rpx;
+  transition: all 0.2s ease;
+}
+
+.mode-tab.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  box-shadow: var(--btn-shadow);
+}
+
+/* ============ Dish Management Mode ============ */
+.dish-tip {
+  font-size: 22rpx;
+  color: var(--text-light);
+  margin-bottom: 20rpx;
+  padding: 0 8rpx;
+}
+
+.dish-scroll {
+  height: calc(100vh - 220rpx);
+}
+
+.dish-category-card {
+  margin-bottom: 24rpx;
+  transition: all 0.2s ease;
+  border: 2rpx solid transparent;
+}
+
+.dish-category-card.drop-target {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+  box-shadow: 0 0 0 4rpx rgba(45, 90, 67, 0.1);
+}
+
+.dish-cat-header {
+  margin-bottom: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid var(--border-color);
+}
+
+.dish-cat-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.dish-count-badge {
+  font-size: 20rpx;
+  color: var(--text-sub);
+  background-color: var(--bg-light);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  margin-left: 12rpx;
+}
+
+/* Dish row */
+.dish-row {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--border-color);
+  gap: 16rpx;
+  transition: opacity 0.15s ease;
+}
+
+.dish-row.dragging {
+  opacity: 0.3;
+}
+
+.dish-grip {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 32rpx;
+  height: 40rpx;
+  gap: 5rpx;
+}
+
+.dish-grip-bar {
+  width: 26rpx;
+  height: 4rpx;
+  background-color: var(--text-light);
+  border-radius: 2rpx;
+}
+
+.dish-name {
+  font-size: 28rpx;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.dish-price {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: var(--danger-color);
+  margin-right: 16rpx;
+}
+
+.dish-delete-btn {
+  font-size: 22rpx;
+  color: var(--danger-color);
+  background-color: #FAF2F0;
+  border: 1rpx solid rgba(224, 122, 95, 0.2);
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  font-weight: 500;
+}
+
+.dish-delete-btn:active {
+  opacity: 0.7;
+}
+
+.dish-empty {
+  padding: 32rpx 0;
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+/* ============ Floating Drag Element ============ */
+.drag-float {
+  position: fixed;
+  transform: translate(-50%, -120%);
+  background-color: var(--primary-color);
+  color: #ffffff;
+  padding: 16rpx 28rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.25);
+  z-index: 9999;
+  pointer-events: none;
+  gap: 16rpx;
+  max-width: 60vw;
+}
+
+.drag-float-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  max-width: 300rpx;
+}
+
+.drag-float-price {
+  font-size: 26rpx;
+  font-weight: bold;
+}
