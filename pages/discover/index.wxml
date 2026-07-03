@@ -1,0 +1,56 @@
+<view class="container">
+  <scroll-view class="discover-scroll" scroll-y>
+    <!-- Top Swiper Banner -->
+    <swiper class="banner-swiper" indicator-dots autoplay circular indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#2D5A43">
+      <swiper-item wx:for="{{banners}}" wx:key="id" bindtap="viewArticle" data-title="{{item.title}}">
+        <view class="swiper-item-container">
+          <image class="banner-image" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="banner-title-bg"></view>
+          <view class="banner-title">{{item.title}}</view>
+        </view>
+      </swiper-item>
+    </swiper>
+
+    <view class="section-title flex-row align-center">
+      <view class="title-line"></view>
+      <text class="title-text">主厨食记</text>
+    </view>
+
+    <!-- Articles List -->
+    <view class="articles-list">
+      <view class="article-card card" wx:for="{{articles}}" wx:key="id" bindtap="viewArticle" data-title="{{item.title}}">
+        <!-- Author Info -->
+        <view class="author-row flex-row">
+          <image class="author-avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+          <view class="author-meta flex-1">
+            <view class="author-name">{{item.author}}</view>
+            <view class="publish-time">发布于 刚刚</view>
+          </view>
+        </view>
+
+        <!-- Content Row (Text + Image) -->
+        <view class="article-body flex-row">
+          <view class="article-text-container flex-1">
+            <view class="article-title text-ellipsis-2">{{item.title}}</view>
+            <view class="article-summary text-ellipsis-2">{{item.summary}}</view>
+          </view>
+          <image class="article-cover" src="{{item.image}}" mode="aspectFill" catchtap="previewImage" data-src="{{item.image}}"></image>
+        </view>
+
+        <!-- Footer Actions -->
+        <view class="article-footer flex-row justify-between align-center" catchtap="preventBubble">
+          <view class="view-count flex-row align-center">
+            <icon type="search" size="12" color="#a0aec0" style="margin-right: 6rpx;"></icon>
+            <text>{{item.views}} 阅读</text>
+          </view>
+          
+          <view class="like-btn flex-row align-center" catchtap="toggleLike" data-id="{{item.id}}">
+            <icon type="success" size="14" color="{{item.isLiked ? '#ff4d4f' : '#a0aec0'}}" style="margin-right: 8rpx;"></icon>
+            <text class="{{item.isLiked ? 'liked' : ''}}">{{item.likes}} 赞</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view style="height: 40rpx;"></view>
+  </scroll-view>
+</view>

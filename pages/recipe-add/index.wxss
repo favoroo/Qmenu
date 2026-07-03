@@ -1,0 +1,359 @@
+.container {
+  min-height: 100vh;
+  background-color: #f7fafc;
+  padding: 30rpx 24rpx 80rpx 24rpx;
+}
+
+.form-card {
+  padding: 40rpx 30rpx !important;
+}
+
+/* Image Uploader styling */
+.image-uploader {
+  width: 100%;
+  height: 360rpx;
+  background-color: var(--bg-light);
+  border: 1rpx dashed var(--primary-color);
+  border-radius: 24rpx;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+}
+
+.uploader-placeholder {
+  height: 100%;
+  width: 100%;
+}
+
+.plus-icon {
+  font-size: 80rpx;
+  color: var(--primary-color);
+  font-weight: 300;
+  line-height: 1;
+  margin-bottom: 12rpx;
+}
+
+.uploader-text {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.uploader-subtext {
+  font-size: 20rpx;
+  color: var(--text-light);
+  margin-top: 8rpx;
+}
+
+/* Form Picker field */
+.picker-selector {
+  width: 100%;
+  height: 80rpx;
+  background-color: var(--bg-light);
+  border: 1rpx solid var(--border-color);
+  border-radius: 16rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+}
+
+.picker-value {
+  color: var(--text-main);
+}
+
+.arrow-down {
+  width: 12rpx;
+  height: 12rpx;
+  border-right: 3rpx solid var(--text-sub);
+  border-bottom: 3rpx solid var(--text-sub);
+  transform: rotate(45deg);
+  margin-right: 6rpx;
+}
+
+/* Input Placeholder */
+.input-placeholder {
+  color: var(--text-light);
+  font-size: 26rpx;
+}
+
+/* Textarea character counter */
+.char-counter {
+  font-size: 20rpx;
+  color: var(--text-light);
+  text-align: right;
+  display: block;
+  margin-top: 8rpx;
+}
+
+/* Submit buttons container */
+.btn-container {
+  margin-top: 50rpx;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 24rpx 0;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+}
+
+.btn-submit.disabled {
+  background: #cbd5e0 !important;
+  box-shadow: none !important;
+}
+
+.btn-delete {
+  width: 100%;
+  padding: 24rpx 0;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  background-color: #FAF2F0;
+  color: var(--danger-color);
+  border: 1rpx solid rgba(224, 122, 95, 0.2);
+  font-weight: bold;
+  text-align: center;
+}
+
+.btn-delete:active {
+  opacity: 0.7;
+}
+
+/* 用料做法样式 */
+.divider-line {
+  height: 1rpx;
+  background-color: var(--border-color);
+  margin: 40rpx 0;
+  width: 100%;
+}
+
+.section-title-row {
+  width: 100%;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.section-subtitle {
+  font-size: 22rpx;
+  color: var(--text-light);
+  margin-top: 4rpx;
+}
+
+.toggle-label {
+  font-size: 26rpx;
+  color: var(--text-sub);
+  margin-right: 12rpx;
+}
+
+.mini-switch {
+  transform: scale(0.8);
+  transform-origin: right center;
+}
+
+.materials-list {
+  width: 100%;
+}
+
+.material-item {
+  width: 100%;
+}
+
+.material-input {
+  height: 76rpx !important;
+  font-size: 26rpx !important;
+}
+
+.margin-left-sm {
+  margin-left: 16rpx;
+}
+
+.delete-icon-btn {
+  width: 68rpx;
+  height: 68rpx;
+  margin-left: 16rpx;
+  border-radius: 16rpx;
+  background-color: #FFF2F0;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.2s ease;
+}
+
+.delete-icon-btn::before {
+  content: "🗑️";
+  font-size: 28rpx;
+}
+
+.delete-icon-btn:active {
+  background-color: #FFE4E1;
+}
+
+.materials-actions {
+  width: 100%;
+}
+
+.btn-sub-action {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+  padding: 12rpx 28rpx;
+  border-radius: 30rpx;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sub-action:active {
+  opacity: 0.8;
+}
+
+.btn-sort {
+  color: var(--text-sub);
+  background-color: var(--bg-light);
+  border: 1rpx solid var(--border-color);
+}
+
+.sort-icon {
+  margin-right: 6rpx;
+  font-size: 24rpx;
+}
+
+.add-sub-icon {
+  margin-right: 6rpx;
+  font-weight: bold;
+}
+
+/* 做法步骤样式 */
+.steps-list {
+  width: 100%;
+}
+
+.step-card-item {
+  width: 100%;
+  background-color: var(--bg-light);
+  border: 1rpx solid var(--border-color);
+  border-radius: 20rpx;
+  padding: 24rpx;
+}
+
+.step-card-header {
+  width: 100%;
+}
+
+.step-number-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+.step-header-actions {
+  flex-shrink: 0;
+}
+
+.btn-step-timer {
+  background-color: #ffffff;
+  border: 1rpx solid rgba(45, 90, 67, 0.2);
+  padding: 6rpx 16rpx;
+  border-radius: 30rpx;
+  font-size: 22rpx;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.timer-icon {
+  margin-right: 6rpx;
+  font-size: 22rpx;
+}
+
+.btn-step-delete {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--text-sub);
+  font-weight: bold;
+  font-size: 28rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-step-delete:active {
+  background-color: rgba(224, 122, 95, 0.1);
+  color: var(--danger-color);
+}
+
+.delete-x {
+  line-height: 1;
+}
+
+.step-image-uploader {
+  width: 100%;
+  height: 280rpx;
+  background-color: #ffffff;
+  border: 1rpx dashed var(--border-color);
+  border-radius: 16rpx;
+  overflow: hidden;
+  cursor: pointer;
+  margin-top: 10rpx;
+}
+
+.step-preview-image {
+  width: 100%;
+  height: 100%;
+}
+
+.step-uploader-placeholder {
+  height: 100%;
+  width: 100%;
+}
+
+.step-plus-icon {
+  font-size: 50rpx;
+  color: var(--text-light);
+  line-height: 1;
+  margin-bottom: 6rpx;
+}
+
+.step-uploader-text {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.step-uploader-subtext {
+  font-size: 18rpx;
+  color: var(--text-light);
+  margin-top: 4rpx;
+}
+
+.step-textarea {
+  background-color: #ffffff !important;
+  min-height: 120rpx;
+  font-size: 26rpx !important;
+  padding: 16rpx 20rpx !important;
+  margin-top: 16rpx;
+  line-height: 1.4;
+}
+
+.btn-add-step-wrapper {
+  width: 100%;
+}
+
+.btn-add-step {
+  width: 100%;
+  padding: 20rpx 0;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  background-color: #ffffff;
+  color: var(--primary-color);
+  border: 1rpx solid rgba(45, 90, 67, 0.2);
+  font-weight: bold;
+}

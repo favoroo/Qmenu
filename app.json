@@ -1,0 +1,46 @@
+{
+  "pages": [
+    "pages/kitchen/index",
+    "pages/order/index",
+    "pages/my/index",
+    "pages/recipe-add/index",
+    "pages/category-manage/index",
+    "pages/order-confirm/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "Q 菜单",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f8fafc"
+  },
+  "tabBar": {
+    "color": "#94A3B8",
+    "selectedColor": "#2D5A43",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/kitchen/index",
+        "text": "厨房",
+        "iconPath": "assets/tabbar/kitchen_normal.png",
+        "selectedIconPath": "assets/tabbar/kitchen_active.png"
+      },
+      {
+        "pagePath": "pages/order/index",
+        "text": "订单",
+        "iconPath": "assets/tabbar/order_normal.png",
+        "selectedIconPath": "assets/tabbar/order_active.png"
+      },
+      {
+        "pagePath": "pages/my/index",
+        "text": "我的",
+        "iconPath": "assets/tabbar/my_normal.png",
+        "selectedIconPath": "assets/tabbar/my_active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

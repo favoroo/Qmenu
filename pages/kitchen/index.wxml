@@ -1,0 +1,312 @@
+<view class="container">
+  <!-- 1. Header Section -->
+  <view class="header-section">
+    <view class="store-info flex-row">
+      <view class="store-meta flex-1">
+        <view class="store-title-row flex-row">
+          <view class="store-name">Q 菜单</view>
+          <view class="cuisine-type-badge">私房菜</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Search Bar -->
+    <view class="search-bar-container">
+      <view class="search-bar flex-row">
+        <icon type="search" size="16" color="#a0aec0"></icon>
+        <input class="search-input" placeholder="搜索菜谱..." value="{{searchQuery}}" bindinput="onSearchInput" placeholder-class="search-placeholder" />
+        <icon type="clear" size="16" color="#cbd5e0" wx:if="{{searchQuery}}" bindtap="onSearchClear"></icon>
+      </view>
+    </view>
+  </view>
+
+  <!-- 2. Dual Column Scroll Section -->
+  <view class="main-content flex-row">
+    <!-- Left Category Scroll -->
+    <scroll-view class="category-sidebar" scroll-y scroll-with-animation>
+      <view 
+        class="category-item {{activeCategoryId === item.id ? 'active' : ''}}" 
+        wx:for="{{categories}}" 
+        wx:key="id" 
+        bindtap="selectCategory" 
+        data-id="{{item.id}}"
+      >
+        <text class="category-name text-ellipsis">{{item.name}}</text>
+      </view>
+      
+      <!-- Category Management shortcut at the bottom -->
+      <view class="category-manage-btn flex-row justify-center align-center" bindtap="goCategoryManage" wx:if="{{isAdmin}}">
+        <icon type="info" size="12" color="#718096" style="margin-right: 6rpx;"></icon>
+        <text>分类管理</text>
+      </view>
+    </scroll-view>
+
+    <!-- Right Recipe Scroll -->
+    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation>
+      <view class="category-title-header">{{categories.length > 0 ? (activeCategoryId ? categories[0].name : '') : '默认分类'}}</view>
+      
+      <view class="recipes-container" wx:if="{{filteredRecipes.length > 0}}">
+        <view class="recipe-card flex-row" wx:for="{{filteredRecipes}}" wx:key="id" bindtap="showRecipeDetail" data-recipe="{{item}}">
+          <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+          <view class="recipe-info flex-1 flex-col justify-between">
+            <view>
+              <view class="recipe-name flex-row align-center">
+                <text>{{item.name}}</text>
+                <text class="admin-edit-tag" wx:if="{{isAdmin}}" catchtap="goRecipeEdit" data-id="{{item.id}}">编辑</text>
+              </view>
+              <view class="recipe-desc text-ellipsis-2">{{item.desc || '主人很懒，还没写这道菜的描述~'}}</view>
+            </view>
+            <view class="recipe-bottom flex-row justify-between align-center">
+              <view class="recipe-price">
+                <text class="price-symbol">¥</text>
+                <text class="price-num">{{item.price}}</text>
+              </view>
+              <!-- Add to Cart / Quantity adjust buttons -->
+              <view class="quantity-controller flex-row align-center">
+                <view 
+                  class="minus-btn" 
+                  wx:if="{{cart[item.id]}}" 
+                  catchtap="onSubtractCart" 
+                  data-id="{{item.id}}"
+                ></view>
+                <text class="quantity-num" wx:if="{{cart[item.id]}}">{{cart[item.id].quantity}}</text>
+                <view 
+                  class="plus-btn" 
+                  catchtap="onAddCart" 
+                  data-item="{{item}}"
+                ></view>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- Add Recipe Button at the bottom of the recipe list -->
+        <view class="bottom-add-recipe-wrapper flex-row justify-center" wx:if="{{isAdmin}}">
+          <view class="btn-add-recipe-bottom flex-row align-center justify-center" bindtap="goRecipeAdd">
+            <text class="add-icon">+</text> 添加菜谱
+          </view>
+        </view>
+      </view>
+
+      <!-- Empty State -->
+      <view class="empty-state flex-col align-center justify-center" wx:else>
+        <icon type="search" size="48" color="#cbd5e0"></icon>
+        <view class="empty-text">该分类下没有符合条件的菜谱哦</view>
+        <button class="btn-secondary margin-top-md" bindtap="goRecipeAdd" wx:if="{{isAdmin}}">添加一道菜</button>
+      </view>
+      <view style="height: 160rpx;"></view> <!-- Bottom spacer -->
+    </scroll-view>
+  </view>
+
+  <!-- 3. Floating Random Wheel Button -->
+  <view class="floating-random-btn flex-row justify-center align-center" bindtap="openRandomModal">
+    <text class="random-icon">🎲</text>
+    <text class="random-text">吃什么</text>
+  </view>
+
+  <!-- 4. Bottom Dock Cart Bar -->
+  <view class="bottom-dock-container flex-row align-center" wx:if="{{cartCount > 0}}">
+    <view class="cart-icon-wrapper flex-row align-center" bindtap="toggleCartPopup">
+      <view class="cart-icon-bg flex-row justify-center align-center">
+        <image class="cart-icon-img" src="/assets/tabbar/kitchen_active.png" mode="aspectFit"></image>
+        <view class="cart-badge">{{cartCount}}</view>
+      </view>
+      <view class="cart-price-info">
+        <view class="cart-total-price">
+          <text class="symbol">¥</text>{{cartTotal}}
+        </view>
+        <view class="cart-subtext">免费配送</view>
+      </view>
+    </view>
+
+    <view class="cart-action-buttons flex-row">
+      <button class="btn-share-invite flex-row align-center justify-center" open-type="share">
+        邀请好友下单
+      </button>
+      <button class="btn-checkout flex-row align-center justify-center" bindtap="goToConfirmOrder">
+        下单
+      </button>
+    </view>
+  </view>
+
+  <!-- 5. Cart Popup Drawer (Overlay & Sheet) -->
+  <view class="overlay" wx:if="{{showCartPopup}}" bindtap="toggleCartPopup"></view>
+  <view class="cart-popup-sheet {{showCartPopup ? 'slide-up' : ''}}" wx:if="{{showCartPopup}}">
+    <view class="cart-sheet-header flex-row justify-between align-center">
+      <view class="title flex-row align-center">
+        <text class="text-bold">已选菜品</text>
+        <text class="sub-count">(共 {{cartCount}} 件)</text>
+      </view>
+      <view class="clear-btn flex-row align-center" bindtap="clearCart">
+        <icon type="clear" size="14" color="#a0aec0" style="margin-right: 6rpx;"></icon>
+        <text>清空</text>
+      </view>
+    </view>
+    
+    <scroll-view class="cart-items-scroll" scroll-y>
+      <view class="cart-item flex-row justify-between align-center" wx:for="{{cart}}" wx:key="key">
+        <view class="item-name-desc">
+          <view class="name">{{item.recipe.name}}</view>
+          <view class="price">¥{{item.recipe.price}}</view>
+        </view>
+        <view class="quantity-controller flex-row align-center">
+          <view class="minus-btn" bindtap="onSubtractCart" data-id="{{item.recipe.id}}"></view>
+          <text class="quantity-num">{{item.quantity}}</text>
+          <view class="plus-btn" bindtap="onAddCart" data-item="{{item.recipe}}"></view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 6. Random Dish Selection Modal -->
+  <view class="modal-overlay" wx:if="{{showRandomModal}}" bindtap="closeRandomModal"></view>
+  <view class="random-modal-card flex-col align-center {{showRandomModal ? 'scale-in' : ''}}" wx:if="{{showRandomModal}}">
+    <view class="modal-close" bindtap="closeRandomModal">×</view>
+    <view class="modal-title">纠结吃什么？帮你挑一个！</view>
+    
+    <view class="rolling-box flex-col align-center justify-center">
+      <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{rollRecipeImage}}" mode="aspectFill"></image>
+      <view class="rolling-name {{isRolling ? 'rolling-text' : ''}}">{{rollRecipeName}}</view>
+    </view>
+
+    <button 
+      class="btn-roll-trigger {{isRolling ? 'disabled' : ''}}" 
+      bindtap="startRandomRoll" 
+      disabled="{{isRolling}}"
+    >
+      {{isRolling ? '挑选美食中...' : '帮我选一个！'}}
+    </button>
+
+    <button 
+      class="btn-roll-confirm" 
+      wx:if="{{randomSelectedRecipe && !isRolling}}" 
+      bindtap="addRandomToCart"
+    >
+      就吃这个，加购物车！
+    </button>
+  </view>
+
+  <!-- 7. Recipe Detail Modal (Overlay & Sheet) -->
+  <view class="detail-overlay" wx:if="{{showDetailModal}}" bindtap="closeRecipeDetail"></view>
+  <view class="detail-popup-sheet flex-col {{showDetailModal ? 'slide-up' : ''}}" wx:if="{{showDetailModal}}">
+    <!-- Close Button -->
+    <view class="detail-close-btn flex-row justify-center align-center" bindtap="closeRecipeDetail">×</view>
+    
+    <!-- Scrollable content -->
+    <scroll-view class="detail-content-scroll flex-1" scroll-y>
+      <!-- Cover Image -->
+      <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+      
+      <view class="detail-info-container">
+        <!-- Title and Category badge -->
+        <view class="detail-title-row flex-row align-center wrap">
+          <text class="detail-name">{{selectedRecipe.name}}</text>
+          <text class="detail-category-badge">{{selectedRecipeCategoryName}}</text>
+        </view>
+        
+        <!-- Price -->
+        <view class="detail-price-row margin-top-sm">
+          <text class="detail-price-symbol">¥</text>
+          <text class="detail-price-num">{{selectedRecipe.price}}</text>
+        </view>
+        
+        <!-- Description -->
+        <view class="detail-desc-box margin-top-md" wx:if="{{selectedRecipe.desc}}">
+          <view class="detail-section-title">菜品介绍</view>
+          <text class="detail-desc-text">{{selectedRecipe.desc}}</text>
+        </view>
+        
+        <!-- Ingredients (用料) -->
+        <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.materials && selectedRecipe.materials.length > 0 && (selectedRecipe.materialsPublic || isAdmin)}}">
+          <view class="detail-divider"></view>
+          <view class="detail-section-title flex-row align-center justify-between">
+            <text>食材清单</text>
+            <text class="private-badge" wx:if="{{!selectedRecipe.materialsPublic}}">仅自己可见</text>
+          </view>
+          
+          <view class="detail-materials-table">
+            <view class="detail-material-row flex-row justify-between align-center" wx:for="{{selectedRecipe.materials}}" wx:key="index">
+              <text class="detail-mat-name">{{item.name}}</text>
+              <view class="detail-mat-dots flex-1"></view>
+              <text class="detail-mat-weight">{{item.weight}}</text>
+            </view>
+          </view>
+        </block>
+        
+        <!-- Cooking Steps (做法) -->
+        <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.steps && selectedRecipe.steps.length > 0 && (selectedRecipe.stepsPublic || isAdmin)}}">
+          <view class="detail-divider"></view>
+          <view class="detail-section-title flex-row align-center justify-between">
+            <text>烹饪步骤</text>
+            <text class="private-badge" wx:if="{{!selectedRecipe.stepsPublic}}">仅自己可见</text>
+          </view>
+          
+          <view class="detail-steps-timeline">
+            <view class="detail-step-timeline-item flex-row align-start" wx:for="{{selectedRecipe.steps}}" wx:key="index">
+              <!-- Left index and line -->
+              <view class="timeline-left flex-col align-center">
+                <view class="timeline-node flex-row justify-center align-center">{{index + 1}}</view>
+                <view class="timeline-line" wx:if="{{index < selectedRecipe.steps.length - 1}}"></view>
+              </view>
+              
+              <!-- Right content -->
+              <view class="timeline-right flex-col flex-1 margin-bottom-lg">
+                <!-- Step Timer -->
+                <view class="timeline-step-header flex-row justify-between align-center" wx:if="{{item.timer > 0}}">
+                  <text class="timeline-step-title">步骤 {{index + 1}}</text>
+                  <!-- Interactive Timer Badge -->
+                  <view 
+                    class="interactive-timer-btn flex-row align-center {{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? 'running' : 'finished') : ''}}" 
+                    catchtap="toggleStepTimer" 
+                    data-index="{{index}}"
+                    data-minutes="{{item.timer}}"
+                  >
+                    <text class="timer-emoji">⏱️</text>
+                    <text class="timer-btn-text">
+                      {{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? '剩余 ' + formattedTimeLeft : '已完成！') : '开始计时 (' + item.timer + '分钟)'}}
+                    </text>
+                  </view>
+                </view>
+                <view class="timeline-step-header" wx:else>
+                  <text class="timeline-step-title">步骤 {{index + 1}}</text>
+                </view>
+                
+                <!-- Step description -->
+                <text class="timeline-step-desc margin-top-xs">{{item.desc}}</text>
+                
+                <!-- Step Image -->
+                <image class="timeline-step-image margin-top-sm" src="{{item.image}}" mode="widthFix" wx:if="{{item.image}}"></image>
+              </view>
+            </view>
+          </view>
+        </block>
+      </view>
+    </scroll-view>
+    
+    <!-- Bottom Add to Cart Bar -->
+    <view class="detail-bottom-bar flex-row justify-between align-center">
+      <view class="detail-bottom-price-info">
+        <view class="price">
+          <text class="symbol">¥</text>{{selectedRecipe.price}}
+        </view>
+      </view>
+      
+      <!-- Quantity Adjust / Add to Cart Button -->
+      <view class="detail-action-button-area">
+        <view class="detail-quantity-controller flex-row align-center" wx:if="{{cart[selectedRecipe.id]}}">
+          <view class="detail-minus-btn" catchtap="onSubtractCart" data-id="{{selectedRecipe.id}}"></view>
+          <text class="detail-quantity-num">{{cart[selectedRecipe.id].quantity}}</text>
+          <view class="detail-plus-btn" catchtap="onAddCart" data-item="{{selectedRecipe}}"></view>
+        </view>
+        <button 
+          class="btn-primary detail-add-cart-btn flex-row justify-center align-center" 
+          bindtap="onAddCart" 
+          data-item="{{selectedRecipe}}"
+          wx:else
+        >
+          加入购物车
+        </button>
+      </view>
+    </view>
+  </view>
+</view>

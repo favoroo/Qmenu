@@ -1,0 +1,207 @@
+<view class="container">
+  <view class="form-card card">
+    <!-- 1. Photo Uploader -->
+    <view class="form-group flex-col align-center">
+      <view class="image-uploader flex-col justify-center align-center" bindtap="chooseImage">
+        <image class="preview-image" src="{{imagePath}}" mode="aspectFill" wx:if="{{imagePath}}"></image>
+        <view class="uploader-placeholder flex-col justify-center align-center" wx:else>
+          <view class="plus-icon">+</view>
+          <view class="uploader-text">上传菜谱大图</view>
+          <view class="uploader-subtext">推荐 1:1 分辨率图片</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 2. Inputs -->
+    <view class="form-group">
+      <text class="form-label">菜品名称</text>
+      <input 
+        class="form-input" 
+        placeholder="请输入菜品名称，如：金牌椒麻鸡" 
+        value="{{name}}" 
+        bindinput="onNameInput"
+        placeholder-class="input-placeholder"
+      />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">所属分类</text>
+      <picker 
+        mode="selector" 
+        range="{{categories}}" 
+        range-key="name" 
+        value="{{categoryIndex}}" 
+        bindchange="onCategoryChange"
+      >
+        <view class="picker-selector flex-row justify-between align-center">
+          <text class="picker-value">{{categories[categoryIndex].name || '请选择分类'}}</text>
+          <view class="arrow-down"></view>
+        </view>
+      </picker>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">起售价格 (¥)</text>
+      <input 
+        class="form-input" 
+        type="digit" 
+        placeholder="0.00" 
+        value="{{price}}" 
+        bindinput="onPriceInput"
+        placeholder-class="input-placeholder"
+      />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">菜品描述</text>
+      <textarea 
+        class="form-textarea" 
+        placeholder="这道私房菜的味道如何？特色是什么？写下您的美食心得吧..." 
+        value="{{desc}}" 
+        bindinput="onDescInput"
+        placeholder-class="input-placeholder"
+        maxlength="200"
+      />
+      <text class="char-counter">{{desc.length}}/200</text>
+    </view>
+
+    <!-- 4. 用料做法开关 -->
+    <view class="form-group flex-row justify-between align-center" style="margin-top: 40rpx; margin-bottom: 20rpx;">
+      <view class="flex-col">
+        <text class="form-label" style="margin-bottom: 4rpx;">用料做法</text>
+        <text class="uploader-subtext" style="margin-top: 0;">记录食材用料及烹饪步骤</text>
+      </view>
+      <switch color="#2D5A43" checked="{{hasMaterialStep}}" bindchange="onHasMaterialStepChange" />
+    </view>
+
+    <!-- 用料做法详细录入 -->
+    <block wx:if="{{hasMaterialStep}}">
+      <view class="divider-line"></view>
+      
+      <!-- 用料部分 -->
+      <view class="section-title-row flex-row justify-between align-center margin-bottom-md">
+        <view class="flex-col">
+          <text class="section-title">用料</text>
+          <text class="section-subtitle">记下用料，方便购买</text>
+        </view>
+        <view class="flex-row align-center">
+          <text class="toggle-label">公开</text>
+          <switch class="mini-switch" color="#2D5A43" checked="{{materialsPublic}}" bindchange="onMaterialsPublicChange" />
+        </view>
+      </view>
+
+      <!-- 用料列表 -->
+      <view class="materials-list">
+        <view class="material-item flex-row align-center margin-bottom-sm" wx:for="{{materials}}" wx:key="index">
+          <input 
+            class="form-input flex-1 material-input" 
+            placeholder="食材：如牛肉" 
+            value="{{item.name}}" 
+            data-index="{{index}}" 
+            bindinput="onMaterialNameInput"
+            placeholder-class="input-placeholder"
+          />
+          <input 
+            class="form-input flex-1 material-input margin-left-sm" 
+            placeholder="用量：如1斤" 
+            value="{{item.weight}}" 
+            data-index="{{index}}" 
+            bindinput="onMaterialWeightInput"
+            placeholder-class="input-placeholder"
+          />
+          <view class="delete-icon-btn flex-row justify-center align-center" bindtap="deleteMaterialRow" data-index="{{index}}" wx:if="{{materials.length > 1}}">
+          </view>
+        </view>
+
+        <!-- 操作按钮 -->
+        <view class="materials-actions flex-row justify-between align-center margin-top-md">
+          <view class="btn-sub-action flex-row align-center btn-sort" bindtap="sortMaterials" wx:if="{{materials.length > 1}}">
+            <text class="sort-icon">☰</text> 排序
+          </view>
+          <view class="flex-1" wx:else></view>
+          <view class="btn-sub-action flex-row align-center btn-add-row" bindtap="addMaterialRow">
+            <text class="add-sub-icon">+</text> 再增加一行
+          </view>
+        </view>
+      </view>
+
+      <view class="divider-line"></view>
+
+      <!-- 做法部分 -->
+      <view class="section-title-row flex-row justify-between align-center margin-bottom-md">
+        <text class="section-title">做法</text>
+        <view class="flex-row align-center">
+          <text class="toggle-label">公开</text>
+          <switch class="mini-switch" color="#2D5A43" checked="{{stepsPublic}}" bindchange="onStepsPublicChange" />
+        </view>
+      </view>
+
+      <!-- 步骤列表 -->
+      <view class="steps-list">
+        <view class="step-card-item margin-bottom-lg" wx:for="{{steps}}" wx:key="index">
+          <view class="step-card-header flex-row justify-between align-center margin-bottom-sm">
+            <view class="step-number-title">步骤 {{index + 1}}</view>
+            <view class="step-header-actions flex-row align-center">
+              <view class="btn-step-timer flex-row align-center" bindtap="setStepTimer" data-index="{{index}}">
+                <text class="timer-icon">⏱️</text>
+                <text class="timer-text">{{item.timer > 0 ? item.timer + ' 分钟' : '添加定时器'}}</text>
+              </view>
+              <view class="btn-step-delete flex-row justify-center align-center margin-left-md" bindtap="deleteStepRow" data-index="{{index}}" wx:if="{{steps.length > 1}}">
+                <text class="delete-x">×</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 步骤图片 -->
+          <view class="step-image-uploader flex-col justify-center align-center margin-bottom-sm" bindtap="chooseStepImage" data-index="{{index}}">
+            <image class="step-preview-image" src="{{item.image}}" mode="aspectFill" wx:if="{{item.image}}"></image>
+            <view class="step-uploader-placeholder flex-col justify-center align-center" wx:else>
+              <view class="step-plus-icon">+</view>
+              <view class="step-uploader-text">添加步骤图</view>
+              <view class="step-uploader-subtext">清晰的步骤会让菜谱更容易理解</view>
+            </view>
+          </view>
+
+          <!-- 步骤描述 -->
+          <textarea 
+            class="form-textarea step-textarea" 
+            placeholder="添加步骤说明" 
+            value="{{item.desc}}" 
+            data-index="{{index}}" 
+            bindinput="onStepDescInput"
+            placeholder-class="input-placeholder"
+            maxlength="150"
+            auto-height
+          />
+        </view>
+
+        <!-- 增加步骤按钮 -->
+        <view class="btn-add-step-wrapper flex-row justify-center margin-top-md">
+          <view class="btn-secondary btn-add-step flex-row align-center justify-center" bindtap="addStepRow">
+            <text class="add-icon">+</text> 增加一步
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 3. Submit Button -->
+  <view class="btn-container">
+    <button 
+      class="btn-primary btn-submit {{isSubmitting ? 'disabled' : ''}}" 
+      bindtap="submitForm"
+      loading="{{isSubmitting}}"
+      disabled="{{isSubmitting}}"
+    >
+      {{recipeId ? '确认保存修改' : '确认保存并发布'}}
+    </button>
+    
+    <button 
+      class="btn-delete margin-top-md" 
+      bindtap="handleDeleteRecipe"
+      wx:if="{{recipeId}}"
+    >
+      删除此菜品
+    </button>
+  </view>
+</view>

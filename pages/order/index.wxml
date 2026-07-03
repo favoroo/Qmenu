@@ -1,0 +1,85 @@
+<view class="container">
+  <scroll-view class="order-scroll" scroll-y wx:if="{{orders.length > 0}}">
+    <view class="order-card card" wx:for="{{orders}}" wx:key="id">
+      <!-- Card Header -->
+      <view class="order-header flex-row justify-between align-center">
+        <view class="order-meta">
+          <view class="order-id">单号：{{item.id}}</view>
+          <view class="order-time">{{item.createTime}}</view>
+        </view>
+        <view class="order-status-badge {{item.status === 'pending' ? 'pending' : 'done'}}">
+          {{item.status === 'pending' ? '制作中' : '制作完成'}}
+        </view>
+      </view>
+
+      <!-- Card Body (Items) -->
+      <view class="order-items-list">
+        <view class="order-item flex-row align-center" wx:for="{{item.items}}" wx:for-item="dish" wx:key="recipeId">
+          <image class="dish-image" src="{{dish.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+          <view class="dish-info flex-1 flex-row justify-between align-center">
+            <view class="dish-name-qty">
+              <view class="dish-name">{{dish.name}}</view>
+              <view class="dish-qty">数量：x{{dish.quantity}}</view>
+            </view>
+            <view class="dish-price">¥{{dish.price}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- Remark Section -->
+      <view class="order-remark" wx:if="{{item.remark}}">
+        <text class="remark-label">备注：</text>
+        <text class="remark-text">{{item.remark}}</text>
+      </view>
+
+      <!-- Card Summary -->
+      <view class="order-summary flex-row justify-between align-center">
+        <view class="share-info-tag" wx:if="{{item.isFromShare}}">
+          <icon type="success" size="12" color="#2D5A43" style="margin-right: 6rpx;"></icon>
+          <text>来自好友拼单</text>
+        </view>
+        <view class="total-text flex-1 text-right">
+          共 {{item.items.length}} 种菜品，实付：<text class="total-price">¥{{item.totalAmount}}</text>
+        </view>
+      </view>
+
+      <!-- Card Actions -->
+      <view class="order-actions flex-row justify-end">
+        <button 
+          class="btn-action-delete" 
+          bindtap="deleteOrder" 
+          data-id="{{item.id}}"
+        >
+          删除订单
+        </button>
+        
+        <button 
+          class="btn-action-complete" 
+          wx:if="{{item.status === 'pending'}}" 
+          bindtap="completeOrder" 
+          data-id="{{item.id}}"
+        >
+          完成制作
+        </button>
+        
+        <button 
+          class="btn-action-reorder" 
+          wx:else 
+          bindtap="reorder" 
+          data-id="{{item.id}}"
+        >
+          再来一单
+        </button>
+      </view>
+    </view>
+    <view style="height: 40rpx;"></view> <!-- Bottom spacing -->
+  </scroll-view>
+
+  <!-- Empty State -->
+  <view class="empty-orders flex-col align-center justify-center" wx:else>
+    <icon type="warn" size="64" color="#cbd5e0" style="margin-bottom: 30rpx;"></icon>
+    <view class="empty-title">暂无订单记录</view>
+    <view class="empty-subtitle">快去厨房挑选心仪的美味吧！</view>
+    <button class="btn-primary margin-top-lg" bindtap="goToKitchen">去厨房逛逛</button>
+  </view>
+</view>
