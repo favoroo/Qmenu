@@ -11,7 +11,7 @@ App({
       wx.setStorageSync('userInfo', {
         nickName: '饕餮吃货',
         avatarUrl: '/assets/images/logo.png',
-        role: 'user' // user or admin
+        role: 'admin'
       });
     }
   },

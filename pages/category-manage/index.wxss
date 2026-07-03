@@ -29,6 +29,9 @@
 
 .sort-input {
   height: 80rpx !important;
+  width: 120rpx;
+  margin-left: 16rpx;
+  text-align: center;
 }
 
 .btn-add {
@@ -156,4 +159,10 @@
   background-color: var(--bg-light);
   border-color: #edf2f7;
   opacity: 0.5;
+}
+
+/* Input Placeholder */
+.input-placeholder {
+  color: var(--text-light);
+  font-size: 26rpx;
 }

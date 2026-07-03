@@ -3,16 +3,13 @@
   <view class="profile-header flex-col align-center justify-center">
     <image class="profile-avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
     <view class="profile-nickname">{{userInfo.nickName}}</view>
-    <view class="profile-role-tag {{userInfo.role === 'admin' ? 'admin' : 'user'}}" bindtap="toggleRole">
-      {{userInfo.role === 'admin' ? '管理员 (点击切换)' : '吃货用户 (点击切换)'}}
-    </view>
   </view>
 
   <!-- 2. Options Menu Lists -->
   <view class="options-container">
     <!-- Admin Settings Section -->
-    <view class="menu-section card" wx:if="{{userInfo.role === 'admin'}}">
-      <view class="section-title">管理设置 (管理员可见)</view>
+    <view class="menu-section card">
+      <view class="section-title">管理设置</view>
       
       <view class="menu-item flex-row justify-between align-center" bindtap="goCategoryManage">
         <view class="menu-item-left flex-row align-center">
@@ -34,17 +31,6 @@
     <!-- General Settings Section -->
     <view class="menu-section card">
       <view class="section-title">系统选项</view>
-
-      <view class="menu-item flex-row justify-between align-center" bindtap="toggleRole">
-        <view class="menu-item-left flex-row align-center">
-          <icon type="search" size="18" color="#4caf50" style="margin-right: 20rpx;"></icon>
-          <text>快速切换身份 (测试用)</text>
-        </view>
-        <view class="menu-item-right flex-row align-center">
-          <text class="status-text">{{userInfo.role === 'admin' ? '管理员' : '普通吃货'}}</text>
-          <view class="arrow-right"></view>
-        </view>
-      </view>
 
       <view class="menu-item flex-row justify-between align-center" bindtap="showAboutUs">
         <view class="menu-item-left flex-row align-center">

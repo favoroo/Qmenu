@@ -107,5 +107,20 @@ Page({
     wx.switchTab({
       url: '/pages/kitchen/index'
     });
+  },
+
+  // View recipe detail of the selected dish
+  viewRecipeDetail(e) {
+    const recipeId = e.currentTarget.dataset.recipeId;
+    if (!recipeId) return;
+
+    // Set the target recipeId in globalData
+    const app = getApp();
+    app.globalData.viewRecipeId = recipeId;
+
+    // Redirect to the kitchen page
+    wx.switchTab({
+      url: '/pages/kitchen/index'
+    });
   }
 });

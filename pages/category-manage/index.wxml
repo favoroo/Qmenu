@@ -17,7 +17,6 @@
         value="{{newCatSort}}" 
         bindinput="onSortInput"
         placeholder-class="input-placeholder"
-        style="width: 120rpx; margin-left: 16rpx; text-align: center;"
       />
       <button class="btn-primary btn-add" bindtap="handleAddCategory">添加</button>
     </view>

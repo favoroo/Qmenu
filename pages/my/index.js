@@ -3,7 +3,7 @@ Page({
     userInfo: {
       nickName: '饕餮吃货',
       avatarUrl: '/assets/images/logo.png',
-      role: 'admin' // default to admin to show admin settings
+      role: 'admin'
     }
   },
 
@@ -18,21 +18,6 @@ Page({
         userInfo: userInfo
       });
     }
-  },
-
-  // Toggle user role between Admin and User for testing purposes
-  toggleRole() {
-    const userInfo = { ...this.data.userInfo };
-    userInfo.role = userInfo.role === 'admin' ? 'user' : 'admin';
-    
-    wx.setStorageSync('userInfo', userInfo);
-    this.setData({ userInfo });
-    
-    wx.showToast({
-      title: `切换为：${userInfo.role === 'admin' ? '管理员' : '普通用户'}`,
-      icon: 'success'
-    });
-    wx.vibrateShort();
   },
 
   // Reset all local storage data to initial states

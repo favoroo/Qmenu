@@ -186,21 +186,6 @@
   margin-bottom: 6rpx;
 }
 
-.admin-edit-tag {
-  font-size: 20rpx;
-  color: var(--primary-color);
-  background-color: var(--primary-light);
-  border: 1rpx solid rgba(26, 160, 95, 0.3);
-  padding: 2rpx 10rpx;
-  border-radius: 6rpx;
-  margin-left: 12rpx;
-  font-weight: normal;
-}
-
-.admin-edit-tag:active {
-  opacity: 0.7;
-}
-
 .recipe-desc {
   font-size: 22rpx;
   color: var(--text-light);
@@ -607,29 +592,148 @@
   text-align: center;
 }
 
+.random-count-selector {
+  width: 100%;
+  margin-bottom: 32rpx;
+}
+
+.selector-label {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: var(--text-main);
+  margin-right: 16rpx;
+}
+
+.selector-options {
+  background-color: var(--bg-light);
+  border-radius: 20rpx;
+  padding: 4rpx;
+  border: 1rpx solid var(--border-color);
+}
+
+.selector-option {
+  padding: 10rpx 28rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--text-sub);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.selector-option.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-weight: bold;
+}
+
 .rolling-box {
   width: 100%;
   background-color: var(--primary-light);
   border-radius: 32rpx;
-  padding: 48rpx;
+  padding: 32rpx;
   border: 1rpx solid rgba(45, 90, 67, 0.1);
   margin-bottom: 40rpx;
   min-height: 340rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.rolling-list {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap: 20rpx;
+}
+
+.rolling-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
 }
 
 .rolling-image {
-  width: 180rpx;
-  height: 180rpx;
   border-radius: 50%;
-  margin-bottom: 24rpx;
   background-color: #ffffff;
   box-shadow: var(--card-shadow);
 }
 
 .rolling-name {
-  font-size: 36rpx;
   font-weight: bold;
   color: var(--primary-color);
+}
+
+/* For single layout */
+.single-layout .rolling-item {
+  width: 100%;
+}
+.single-layout .rolling-image {
+  width: 180rpx;
+  height: 180rpx;
+  margin-bottom: 24rpx;
+}
+.single-layout .rolling-name {
+  font-size: 36rpx;
+  text-align: center;
+}
+
+/* For grid layout (2, 3, 4 items) */
+.grid-2 .rolling-item {
+  width: 45%;
+}
+.grid-2 .rolling-image {
+  width: 130rpx;
+  height: 130rpx;
+  margin-bottom: 16rpx;
+}
+.grid-2 .rolling-name {
+  font-size: 28rpx;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.grid-3 .rolling-item {
+  width: 30%;
+}
+.grid-3 .rolling-image {
+  width: 100rpx;
+  height: 100rpx;
+  margin-bottom: 12rpx;
+}
+.grid-3 .rolling-name {
+  font-size: 24rpx;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.grid-4 .rolling-item {
+  width: 45%;
+}
+.grid-4 .rolling-image {
+  width: 110rpx;
+  height: 110rpx;
+  margin-bottom: 12rpx;
+}
+.grid-4 .rolling-name {
+  font-size: 26rpx;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .btn-roll-trigger {
@@ -946,12 +1050,16 @@
 
 .timeline-step-header {
   width: 100%;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
 }
 
 .timeline-step-title {
   font-size: 28rpx;
   font-weight: bold;
   color: var(--text-main);
+  line-height: 48rpx;
 }
 
 /* 交互烹饪定时器 */
@@ -959,12 +1067,20 @@
   background-color: var(--primary-light);
   color: var(--primary-color);
   border: 1rpx solid rgba(45, 90, 67, 0.25);
-  padding: 6rpx 20rpx;
-  border-radius: 30rpx;
+  padding: 0 18rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
   font-size: 22rpx;
-  font-weight: bold;
+  font-weight: 600;
   transition: all 0.25s ease;
   box-shadow: 0 2rpx 6rpx rgba(45, 90, 67, 0.04);
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .interactive-timer-btn:active {
@@ -972,7 +1088,13 @@
 }
 
 .timer-emoji {
+  font-size: 22rpx;
   margin-right: 6rpx;
+  line-height: 1;
+}
+
+.timer-btn-text {
+  line-height: 1;
 }
 
 .interactive-timer-btn.running {

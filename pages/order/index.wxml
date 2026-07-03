@@ -14,14 +14,17 @@
 
       <!-- Card Body (Items) -->
       <view class="order-items-list">
-        <view class="order-item flex-row align-center" wx:for="{{item.items}}" wx:for-item="dish" wx:key="recipeId">
+        <view class="order-item flex-row align-center" wx:for="{{item.items}}" wx:for-item="dish" wx:key="recipeId" bindtap="viewRecipeDetail" data-recipe-id="{{dish.recipeId}}">
           <image class="dish-image" src="{{dish.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
           <view class="dish-info flex-1 flex-row justify-between align-center">
             <view class="dish-name-qty">
               <view class="dish-name">{{dish.name}}</view>
               <view class="dish-qty">数量：x{{dish.quantity}}</view>
             </view>
-            <view class="dish-price">¥{{dish.price}}</view>
+            <view class="dish-price-arrow flex-row align-center">
+              <text class="dish-price">¥{{dish.price}}</text>
+              <text class="chevron-right">›</text>
+            </view>
           </view>
         </view>
       </view>

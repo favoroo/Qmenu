@@ -8,6 +8,7 @@ Page({
     desc: '',
     categories: [],
     categoryIndex: 0,
+    categoryName: '请选择分类',
     imagePath: '',
     
     // 用料做法相关
@@ -36,6 +37,8 @@ Page({
         if (categoryIndex > -1) {
           this.setData({
             categoryIndex: categoryIndex
+          }, () => {
+            this.updateCategoryName();
           });
         }
       }
@@ -54,8 +57,18 @@ Page({
     this.setData({
       categories: categories
     }, () => {
+      this.updateCategoryName();
       if (typeof callback === 'function') callback();
     });
+  },
+
+  updateCategoryName() {
+    const { categories, categoryIndex } = this.data;
+    let categoryName = '请选择分类';
+    if (categories && categories.length > 0 && categories[categoryIndex]) {
+      categoryName = categories[categoryIndex].name;
+    }
+    this.setData({ categoryName });
   },
 
   loadRecipeDetails(id) {
@@ -77,6 +90,8 @@ Page({
         materials: recipe.materials && recipe.materials.length > 0 ? recipe.materials : [{ name: '', weight: '' }],
         stepsPublic: recipe.stepsPublic !== false,
         steps: recipe.steps && recipe.steps.length > 0 ? recipe.steps : [{ image: '', desc: '', timer: 0 }]
+      }, () => {
+        this.updateCategoryName();
       });
     }
   },
@@ -97,6 +112,8 @@ Page({
   onCategoryChange(e) {
     this.setData({
       categoryIndex: parseInt(e.detail.value)
+    }, () => {
+      this.updateCategoryName();
     });
   },
 

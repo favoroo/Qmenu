@@ -28,24 +28,9 @@
   font-size: 36rpx;
   font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 16rpx;
+  margin-bottom: 0;
 }
 
-.profile-role-tag {
-  font-size: 22rpx;
-  padding: 8rpx 24rpx;
-  border-radius: 24rpx;
-  font-weight: 600;
-  color: var(--primary-color);
-  background-color: var(--primary-light);
-  border: 1rpx solid rgba(45, 90, 67, 0.15);
-}
-
-.profile-role-tag.admin {
-  color: var(--accent-color);
-  background-color: #FAF6F0;
-  border: 1rpx solid rgba(212, 163, 115, 0.2);
-}
 
 /* 2. Options List */
 .options-container {

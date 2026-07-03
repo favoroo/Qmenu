@@ -43,16 +43,15 @@
 
     <!-- Right Recipe Scroll -->
     <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation>
-      <view class="category-title-header">{{categories.length > 0 ? (activeCategoryId ? categories[0].name : '') : '默认分类'}}</view>
+      <view class="category-title-header">{{activeCategoryName || '默认分类'}}</view>
       
       <view class="recipes-container" wx:if="{{filteredRecipes.length > 0}}">
-        <view class="recipe-card flex-row" wx:for="{{filteredRecipes}}" wx:key="id" bindtap="showRecipeDetail" data-recipe="{{item}}">
+        <view class="recipe-card flex-row" wx:for="{{filteredRecipes}}" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
           <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
           <view class="recipe-info flex-1 flex-col justify-between">
             <view>
               <view class="recipe-name flex-row align-center">
                 <text>{{item.name}}</text>
-                <text class="admin-edit-tag" wx:if="{{isAdmin}}" catchtap="goRecipeEdit" data-id="{{item.id}}">编辑</text>
               </view>
               <view class="recipe-desc text-ellipsis-2">{{item.desc || '主人很懒，还没写这道菜的描述~'}}</view>
             </view>
@@ -162,11 +161,26 @@
   <view class="modal-overlay" wx:if="{{showRandomModal}}" bindtap="closeRandomModal"></view>
   <view class="random-modal-card flex-col align-center {{showRandomModal ? 'scale-in' : ''}}" wx:if="{{showRandomModal}}">
     <view class="modal-close" bindtap="closeRandomModal">×</view>
-    <view class="modal-title">纠结吃什么？帮你挑一个！</view>
+    <view class="modal-title">{{randomCount === 1 ? '纠结吃什么？帮你挑一个！' : '纠结吃什么？帮你挑' + randomCount + '个！'}}</view>
     
+    <!-- Selector for random count -->
+    <view class="random-count-selector flex-row align-center justify-center">
+      <text class="selector-label">选择菜数：</text>
+      <view class="selector-options flex-row">
+        <view class="selector-option {{randomCount === 1 ? 'active' : ''}}" bindtap="setRandomCount" data-count="1">1个</view>
+        <view class="selector-option {{randomCount === 2 ? 'active' : ''}}" bindtap="setRandomCount" data-count="2">2个</view>
+        <view class="selector-option {{randomCount === 3 ? 'active' : ''}}" bindtap="setRandomCount" data-count="3">3个</view>
+        <view class="selector-option {{randomCount === 4 ? 'active' : ''}}" bindtap="setRandomCount" data-count="4">4个</view>
+      </view>
+    </view>
+
     <view class="rolling-box flex-col align-center justify-center">
-      <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{rollRecipeImage}}" mode="aspectFill"></image>
-      <view class="rolling-name {{isRolling ? 'rolling-text' : ''}}">{{rollRecipeName}}</view>
+      <view class="rolling-list {{randomCount > 1 ? 'grid-' + randomCount : 'single-layout'}}">
+        <view class="rolling-item flex-col align-center justify-center" wx:for="{{rollingRecipes}}" wx:key="index">
+          <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+          <view class="rolling-name {{isRolling ? 'rolling-text' : ''}}">{{item.name}}</view>
+        </view>
+      </view>
     </view>
 
     <button 
@@ -174,139 +188,139 @@
       bindtap="startRandomRoll" 
       disabled="{{isRolling}}"
     >
-      {{isRolling ? '挑选美食中...' : '帮我选一个！'}}
+      {{isRolling ? '挑选美食中...' : '帮我选 ' + randomCount + ' 个！'}}
     </button>
 
     <button 
       class="btn-roll-confirm" 
-      wx:if="{{randomSelectedRecipe && !isRolling}}" 
+      wx:if="{{randomSelectedRecipes.length > 0 && !isRolling}}" 
       bindtap="addRandomToCart"
     >
-      就吃这个，加购物车！
+      {{randomCount === 1 ? '就吃这个，加购物车！' : '就要这些，加购物车！'}}
     </button>
   </view>
 
   <!-- 7. Recipe Detail Modal (Overlay & Sheet) -->
   <view class="detail-overlay" wx:if="{{showDetailModal}}" bindtap="closeRecipeDetail"></view>
   <view class="detail-popup-sheet flex-col {{showDetailModal ? 'slide-up' : ''}}" wx:if="{{showDetailModal}}">
-    <!-- Close Button -->
-    <view class="detail-close-btn flex-row justify-center align-center" bindtap="closeRecipeDetail">×</view>
-    
-    <!-- Scrollable content -->
-    <scroll-view class="detail-content-scroll flex-1" scroll-y>
-      <!-- Cover Image -->
-      <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+    <block wx:if="{{selectedRecipe}}">
+      <!-- Close Button -->
+      <view class="detail-close-btn flex-row justify-center align-center" bindtap="closeRecipeDetail">×</view>
       
-      <view class="detail-info-container">
-        <!-- Title and Category badge -->
-        <view class="detail-title-row flex-row align-center wrap">
-          <text class="detail-name">{{selectedRecipe.name}}</text>
-          <text class="detail-category-badge">{{selectedRecipeCategoryName}}</text>
-        </view>
+      <!-- Scrollable content -->
+      <scroll-view class="detail-content-scroll flex-1" scroll-y>
+        <!-- Cover Image -->
+        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
         
-        <!-- Price -->
-        <view class="detail-price-row margin-top-sm">
-          <text class="detail-price-symbol">¥</text>
-          <text class="detail-price-num">{{selectedRecipe.price}}</text>
-        </view>
-        
-        <!-- Description -->
-        <view class="detail-desc-box margin-top-md" wx:if="{{selectedRecipe.desc}}">
-          <view class="detail-section-title">菜品介绍</view>
-          <text class="detail-desc-text">{{selectedRecipe.desc}}</text>
-        </view>
-        
-        <!-- Ingredients (用料) -->
-        <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.materials && selectedRecipe.materials.length > 0 && (selectedRecipe.materialsPublic || isAdmin)}}">
-          <view class="detail-divider"></view>
-          <view class="detail-section-title flex-row align-center justify-between">
-            <text>食材清单</text>
-            <text class="private-badge" wx:if="{{!selectedRecipe.materialsPublic}}">仅自己可见</text>
+        <view class="detail-info-container">
+          <!-- Title and Category badge -->
+          <view class="detail-title-row flex-row align-center wrap">
+            <text class="detail-name">{{selectedRecipe.name}}</text>
+            <text class="detail-category-badge">{{selectedRecipeCategoryName}}</text>
           </view>
           
-          <view class="detail-materials-table">
-            <view class="detail-material-row flex-row justify-between align-center" wx:for="{{selectedRecipe.materials}}" wx:key="index">
-              <text class="detail-mat-name">{{item.name}}</text>
-              <view class="detail-mat-dots flex-1"></view>
-              <text class="detail-mat-weight">{{item.weight}}</text>
+          <!-- Price -->
+          <view class="detail-price-row margin-top-sm">
+            <text class="detail-price-symbol">¥</text>
+            <text class="detail-price-num">{{selectedRecipe.price}}</text>
+          </view>
+          
+          <!-- Description -->
+          <view class="detail-desc-box margin-top-md" wx:if="{{selectedRecipe.desc}}">
+            <view class="detail-section-title">菜品介绍</view>
+            <text class="detail-desc-text">{{selectedRecipe.desc}}</text>
+          </view>
+          
+          <!-- Ingredients (用料) -->
+          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.materials && selectedRecipe.materials.length > 0 && (selectedRecipe.materialsPublic || isAdmin)}}">
+            <view class="detail-divider"></view>
+            <view class="detail-section-title flex-row align-center justify-between">
+              <text>食材清单</text>
+              <text class="private-badge" wx:if="{{!selectedRecipe.materialsPublic}}">仅自己可见</text>
             </view>
-          </view>
-        </block>
-        
-        <!-- Cooking Steps (做法) -->
-        <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.steps && selectedRecipe.steps.length > 0 && (selectedRecipe.stepsPublic || isAdmin)}}">
-          <view class="detail-divider"></view>
-          <view class="detail-section-title flex-row align-center justify-between">
-            <text>烹饪步骤</text>
-            <text class="private-badge" wx:if="{{!selectedRecipe.stepsPublic}}">仅自己可见</text>
-          </view>
-          
-          <view class="detail-steps-timeline">
-            <view class="detail-step-timeline-item flex-row align-start" wx:for="{{selectedRecipe.steps}}" wx:key="index">
-              <!-- Left index and line -->
-              <view class="timeline-left flex-col align-center">
-                <view class="timeline-node flex-row justify-center align-center">{{index + 1}}</view>
-                <view class="timeline-line" wx:if="{{index < selectedRecipe.steps.length - 1}}"></view>
+            
+            <view class="detail-materials-table">
+              <view class="detail-material-row flex-row justify-between align-center" wx:for="{{selectedRecipe.materials}}" wx:key="index">
+                <text class="detail-mat-name">{{item.name}}</text>
+                <view class="detail-mat-dots flex-1"></view>
+                <text class="detail-mat-weight">{{item.weight}}</text>
               </view>
-              
-              <!-- Right content -->
-              <view class="timeline-right flex-col flex-1 margin-bottom-lg">
-                <!-- Step Timer -->
-                <view class="timeline-step-header flex-row justify-between align-center" wx:if="{{item.timer > 0}}">
-                  <text class="timeline-step-title">步骤 {{index + 1}}</text>
-                  <!-- Interactive Timer Badge -->
-                  <view 
-                    class="interactive-timer-btn flex-row align-center {{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? 'running' : 'finished') : ''}}" 
-                    catchtap="toggleStepTimer" 
-                    data-index="{{index}}"
-                    data-minutes="{{item.timer}}"
-                  >
-                    <text class="timer-emoji">⏱️</text>
-                    <text class="timer-btn-text">
-                      {{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? '剩余 ' + formattedTimeLeft : '已完成！') : '开始计时 (' + item.timer + '分钟)'}}
-                    </text>
+            </view>
+          </block>
+          
+          <!-- Cooking Steps (做法) -->
+          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.steps && selectedRecipe.steps.length > 0 && (selectedRecipe.stepsPublic || isAdmin)}}">
+            <view class="detail-divider"></view>
+            <view class="detail-section-title flex-row align-center justify-between">
+              <text>烹饪步骤</text>
+              <text class="private-badge" wx:if="{{!selectedRecipe.stepsPublic}}">仅自己可见</text>
+            </view>
+            
+            <view class="detail-steps-timeline">
+              <view class="detail-step-timeline-item flex-row align-start" wx:for="{{selectedRecipe.steps}}" wx:key="index">
+                <!-- Left index and line -->
+                <view class="timeline-left flex-col align-center">
+                  <view class="timeline-node flex-row justify-center align-center">{{index + 1}}</view>
+                  <view class="timeline-line" wx:if="{{index < selectedRecipe.steps.length - 1}}"></view>
+                </view>
+                
+                <!-- Right content -->
+                <view class="timeline-right flex-col flex-1 margin-bottom-lg">
+                  <!-- Step Timer -->
+                  <view class="timeline-step-header flex-row justify-between align-center" wx:if="{{item.timer > 0}}">
+                    <text class="timeline-step-title">步骤 {{index + 1}}</text>
+                    <!-- Interactive Timer Badge -->
+                    <view 
+                      class="interactive-timer-btn flex-row align-center {{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? 'running' : 'finished') : ''}}" 
+                      catchtap="toggleStepTimer" 
+                      data-index="{{index}}"
+                      data-minutes="{{item.timer}}"
+                    >
+                      <text class="timer-emoji">⏱️</text>
+                      <text class="timer-btn-text">{{activeTimerStepIndex === index ? (timerSecondsLeft > 0 ? '剩余 ' + formattedTimeLeft : '已完成！') : '开始计时 (' + item.timer + '分钟)'}}</text>
+                    </view>
                   </view>
+                  <view class="timeline-step-header" wx:else>
+                    <text class="timeline-step-title">步骤 {{index + 1}}</text>
+                  </view>
+                  
+                  <!-- Step description -->
+                  <text class="timeline-step-desc margin-top-xs">{{item.desc}}</text>
+                  
+                  <!-- Step Image -->
+                  <image class="timeline-step-image margin-top-sm" src="{{item.image}}" mode="widthFix" wx:if="{{item.image}}"></image>
                 </view>
-                <view class="timeline-step-header" wx:else>
-                  <text class="timeline-step-title">步骤 {{index + 1}}</text>
-                </view>
-                
-                <!-- Step description -->
-                <text class="timeline-step-desc margin-top-xs">{{item.desc}}</text>
-                
-                <!-- Step Image -->
-                <image class="timeline-step-image margin-top-sm" src="{{item.image}}" mode="widthFix" wx:if="{{item.image}}"></image>
               </view>
             </view>
-          </view>
-        </block>
-      </view>
-    </scroll-view>
-    
-    <!-- Bottom Add to Cart Bar -->
-    <view class="detail-bottom-bar flex-row justify-between align-center">
-      <view class="detail-bottom-price-info">
-        <view class="price">
-          <text class="symbol">¥</text>{{selectedRecipe.price}}
+          </block>
         </view>
-      </view>
+      </scroll-view>
       
-      <!-- Quantity Adjust / Add to Cart Button -->
-      <view class="detail-action-button-area">
-        <view class="detail-quantity-controller flex-row align-center" wx:if="{{cart[selectedRecipe.id]}}">
-          <view class="detail-minus-btn" catchtap="onSubtractCart" data-id="{{selectedRecipe.id}}"></view>
-          <text class="detail-quantity-num">{{cart[selectedRecipe.id].quantity}}</text>
-          <view class="detail-plus-btn" catchtap="onAddCart" data-item="{{selectedRecipe}}"></view>
+      <!-- Bottom Add to Cart Bar -->
+      <view class="detail-bottom-bar flex-row justify-between align-center">
+        <view class="detail-bottom-price-info">
+          <view class="price">
+            <text class="symbol">¥</text>{{selectedRecipe.price}}
+          </view>
         </view>
-        <button 
-          class="btn-primary detail-add-cart-btn flex-row justify-center align-center" 
-          bindtap="onAddCart" 
-          data-item="{{selectedRecipe}}"
-          wx:else
-        >
-          加入购物车
-        </button>
+        
+        <!-- Quantity Adjust / Add to Cart Button -->
+        <view class="detail-action-button-area">
+          <view class="detail-quantity-controller flex-row align-center" wx:if="{{cart[selectedRecipe.id]}}">
+            <view class="detail-minus-btn" catchtap="onSubtractCart" data-id="{{selectedRecipe.id}}"></view>
+            <text class="detail-quantity-num">{{cart[selectedRecipe.id].quantity}}</text>
+            <view class="detail-plus-btn" catchtap="onAddCart" data-item="{{selectedRecipe}}"></view>
+          </view>
+          <button 
+            class="btn-primary detail-add-cart-btn flex-row justify-center align-center" 
+            bindtap="onAddCart" 
+            data-item="{{selectedRecipe}}"
+            wx:else
+          >
+            加入购物车
+          </button>
+        </view>
       </view>
-    </view>
+    </block>
   </view>
 </view>

@@ -34,7 +34,7 @@
         bindchange="onCategoryChange"
       >
         <view class="picker-selector flex-row justify-between align-center">
-          <text class="picker-value">{{categories[categoryIndex].name || '请选择分类'}}</text>
+          <text class="picker-value">{{categoryName}}</text>
           <view class="arrow-down"></view>
         </view>
       </picker>
