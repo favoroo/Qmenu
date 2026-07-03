@@ -29,6 +29,10 @@ Page({
       confirmColor: '#ff4d4f',
       success(res) {
         if (res.confirm) {
+          // 先清理本地持久化图片文件（clearStorageSync 不会清理文件）
+          const imageUtil = require('../../utils/image.js');
+          imageUtil.clearAll();
+
           wx.clearStorageSync();
           
           // Re-initialize default mock DB

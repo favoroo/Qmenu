@@ -68,13 +68,15 @@ Page({
 
   initDragList() {
     const { categories, itemHeight } = this.data;
-    if (!itemHeight || !categories.length) {
+    if (!categories.length) {
       this.setData({ dragList: [] });
       return;
     }
+    // Use a default height (~100rpx) if itemHeight hasn't been measured yet
+    const h = itemHeight || (wx.getSystemInfoSync().windowWidth * 100 / 750);
     const dragList = categories.map((item, index) => ({
       ...item,
-      y: itemHeight * index
+      y: h * index
     }));
     this.setData({ dragList });
   },
@@ -83,10 +85,11 @@ Page({
   switchMode(e) {
     const mode = e.currentTarget.dataset.mode;
     if (mode === this.data.mode) return;
-    this.setData({ mode });
-    if (mode === 'sort' && !this.data.itemHeight) {
-      this._queryItemHeight();
-    }
+    this.setData({ mode }, () => {
+      if (mode === 'sort') {
+        this._queryItemHeight();
+      }
+    });
     wx.vibrateShort({ type: 'light' });
   },
 

@@ -48,7 +48,7 @@ Page({
     
     if (index > -1) {
       orders[index].status = 'done';
-      wx.setStorageSync('DB_ORDERS', orders);
+      db.saveOrders(orders);
       this.loadOrders();
       wx.showToast({
         title: '订单已制作完成！',
@@ -105,9 +105,7 @@ Page({
       content: '确定要删除这条订单记录吗？',
       success(res) {
         if (res.confirm) {
-          let orders = db.getOrders();
-          orders = orders.filter(o => o.id !== orderId);
-          wx.setStorageSync('DB_ORDERS', orders);
+          db.deleteOrder(orderId);
           self.loadOrders();
           wx.showToast({
             title: '删除成功',

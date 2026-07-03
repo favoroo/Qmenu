@@ -1,3 +1,16 @@
+const imageUtil = require('./image.js');
+
+// ===== 同步存储适配层 =====
+// 当前：基于 wx 本地缓存（同步）。
+// 迁移指引（接入服务器）：将下方 get/set/remove/clear 替换为 wx.request 调用后端 REST API。
+//   注意 wx.request 为异步，届时需把 db 各方法改为 async/await，调用方相应 await。
+const storage = {
+  get(key) { return wx.getStorageSync(key); },
+  set(key, value) { wx.setStorageSync(key, value); return value; },
+  remove(key) { wx.removeStorageSync(key); },
+  clear() { wx.clearStorageSync(); }
+};
+
 const STORAGE_KEYS = {
   CATEGORIES: 'DB_CATEGORIES',
   RECIPES: 'DB_RECIPES',
@@ -104,36 +117,36 @@ const DEFAULT_RECIPES = [
 const db = {
   // Initialize Database with seed data if empty
   init() {
-    let categories = wx.getStorageSync(STORAGE_KEYS.CATEGORIES);
+    let categories = storage.get(STORAGE_KEYS.CATEGORIES);
     if (!categories || categories.length === 0) {
-      wx.setStorageSync(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
+      storage.set(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
     }
     
-    let recipes = wx.getStorageSync(STORAGE_KEYS.RECIPES);
+    let recipes = storage.get(STORAGE_KEYS.RECIPES);
     if (!recipes || recipes.length === 0 || !recipes[0].hasOwnProperty('hasMaterialStep')) {
-      wx.setStorageSync(STORAGE_KEYS.RECIPES, DEFAULT_RECIPES);
+      storage.set(STORAGE_KEYS.RECIPES, DEFAULT_RECIPES);
     }
     
-    let orders = wx.getStorageSync(STORAGE_KEYS.ORDERS);
+    let orders = storage.get(STORAGE_KEYS.ORDERS);
     if (!orders) {
-      wx.setStorageSync(STORAGE_KEYS.ORDERS, []);
+      storage.set(STORAGE_KEYS.ORDERS, []);
     }
     
-    let cart = wx.getStorageSync(STORAGE_KEYS.CART);
+    let cart = storage.get(STORAGE_KEYS.CART);
     if (!cart) {
-      wx.setStorageSync(STORAGE_KEYS.CART, {});
+      storage.set(STORAGE_KEYS.CART, {});
     }
   },
 
   // --- Category APIs ---
   getCategories() {
     this.init();
-    const list = wx.getStorageSync(STORAGE_KEYS.CATEGORIES) || [];
+    const list = storage.get(STORAGE_KEYS.CATEGORIES) || [];
     return list.sort((a, b) => (a.sort || 0) - (b.sort || 0));
   },
 
   saveCategories(categories) {
-    wx.setStorageSync(STORAGE_KEYS.CATEGORIES, categories);
+    storage.set(STORAGE_KEYS.CATEGORIES, categories);
   },
 
   addCategory(name, sort = 10) {
@@ -170,11 +183,11 @@ const db = {
   // --- Recipe APIs ---
   getRecipes() {
     this.init();
-    return wx.getStorageSync(STORAGE_KEYS.RECIPES) || [];
+    return storage.get(STORAGE_KEYS.RECIPES) || [];
   },
 
   saveRecipes(recipes) {
-    wx.setStorageSync(STORAGE_KEYS.RECIPES, recipes);
+    storage.set(STORAGE_KEYS.RECIPES, recipes);
   },
 
   addRecipe(recipe) {
@@ -219,9 +232,11 @@ const db = {
   },
 
   deleteRecipe(id) {
-    let list = this.getRecipes();
-    list = list.filter(item => item.id !== id);
-    this.saveRecipes(list);
+    const list = this.getRecipes();
+    const target = list.find(r => r.id === id);
+    // 清理本地图片文件（封面+步骤图），防止 100MB 上限溢出
+    if (target) imageUtil.removeImagesSync(imageUtil.collectRecipeImages(target));
+    this.saveRecipes(list.filter(item => item.id !== id));
     
     // Also remove from cart if it's there
     this.removeFromCartCompletely(id);
@@ -230,11 +245,11 @@ const db = {
   // --- Cart APIs ---
   getCart() {
     this.init();
-    return wx.getStorageSync(STORAGE_KEYS.CART) || {};
+    return storage.get(STORAGE_KEYS.CART) || {};
   },
 
   saveCart(cart) {
-    wx.setStorageSync(STORAGE_KEYS.CART, cart);
+    storage.set(STORAGE_KEYS.CART, cart);
   },
 
   addToCart(recipe) {
@@ -273,7 +288,7 @@ const db = {
   },
 
   clearCart() {
-    wx.setStorageSync(STORAGE_KEYS.CART, {});
+    storage.set(STORAGE_KEYS.CART, {});
     return {};
   },
 
@@ -298,7 +313,15 @@ const db = {
   // --- Order APIs ---
   getOrders() {
     this.init();
-    return wx.getStorageSync(STORAGE_KEYS.ORDERS) || [];
+    return storage.get(STORAGE_KEYS.ORDERS) || [];
+  },
+
+  saveOrders(orders) {
+    storage.set(STORAGE_KEYS.ORDERS, orders);
+  },
+
+  deleteOrder(orderId) {
+    this.saveOrders(this.getOrders().filter(o => o.id !== orderId));
   },
 
   createOrder(remark = '', isFromShare = false, sharerId = '') {
@@ -327,7 +350,7 @@ const db = {
     };
 
     orders.unshift(newOrder); // Add to beginning of array
-    wx.setStorageSync(STORAGE_KEYS.ORDERS, orders);
+    this.saveOrders(orders);
     this.clearCart();
     return newOrder;
   },

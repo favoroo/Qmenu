@@ -1,4 +1,5 @@
 const db = require('../../utils/db.js');
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -273,7 +274,7 @@ Page({
   },
 
   // Form submission (Save / Update)
-  submitForm() {
+  async submitForm() {
     const { 
       recipeId, name, price, desc, categories, categoryIndex, imagePath, isSubmitting,
       hasMaterialStep, materialsPublic, materials, stepsPublic, steps
@@ -309,50 +310,79 @@ Page({
 
     this.setData({ isSubmitting: true });
 
-    const selectedCategory = categories[categoryIndex];
-    
-    // Filter empty items
-    const finalMaterials = hasMaterialStep ? materials.filter(m => m.name.trim() || m.weight.trim()) : [];
-    const finalSteps = hasMaterialStep ? steps.filter(s => s.desc.trim() || s.image) : [];
+    try {
+      const selectedCategory = categories[categoryIndex];
 
-    const recipeData = {
-      name: name.trim(),
-      price: priceNum,
-      desc: desc.trim(),
-      categoryId: selectedCategory.id,
-      image: imagePath || '/assets/images/default_food.png',
-      hasMaterialStep,
-      materialsPublic,
-      materials: finalMaterials,
-      stepsPublic,
-      steps: finalSteps
-    };
+      // 封面图：仅 tempPath 才持久化（编辑未换图则保持已存路径）
+      let finalImage = imagePath || '/assets/images/default_food.png';
+      if (imageUtil.isTempPath(imagePath)) {
+        finalImage = await imageUtil.storeImage(imagePath);
+      }
 
-    if (recipeId) {
-      // EDIT MODE: Update existing recipe
-      recipeData.id = recipeId;
-      db.updateRecipe(recipeData);
+      // Filter empty items
+      const finalMaterials = hasMaterialStep ? materials.filter(m => m.name.trim() || m.weight.trim()) : [];
+      const finalSteps = hasMaterialStep ? steps.filter(s => s.desc.trim() || s.image) : [];
 
+      // 步骤图：逐个持久化 tempPath（先过滤空行，避免处理将被丢弃的图）
+      for (let i = 0; i < finalSteps.length; i++) {
+        if (imageUtil.isTempPath(finalSteps[i].image)) {
+          finalSteps[i] = { ...finalSteps[i], image: await imageUtil.storeImage(finalSteps[i].image) };
+        }
+      }
+
+      const recipeData = {
+        name: name.trim(),
+        price: priceNum,
+        desc: desc.trim(),
+        categoryId: selectedCategory.id,
+        image: finalImage,
+        hasMaterialStep,
+        materialsPublic,
+        materials: finalMaterials,
+        stepsPublic,
+        steps: finalSteps
+      };
+
+      if (recipeId) {
+        // EDIT MODE: 记录旧图，更新后清理被替换的旧图（防孤儿堆积）
+        const oldRecipe = db.getRecipes().find(r => r.id === recipeId) || null;
+        recipeData.id = recipeId;
+        db.updateRecipe(recipeData);
+        if (oldRecipe) {
+          const oldImgs = imageUtil.collectRecipeImages(oldRecipe);
+          const newImgs = imageUtil.collectRecipeImages(recipeData);
+          oldImgs.filter(p => newImgs.indexOf(p) === -1).forEach(imageUtil.removeImageSync);
+        }
+
+        wx.showToast({
+          title: '保存修改成功！',
+          icon: 'success',
+          duration: 1500
+        });
+      } else {
+        // ADD MODE: Create new recipe
+        db.addRecipe(recipeData);
+
+        wx.showToast({
+          title: '发布菜谱成功！',
+          icon: 'success',
+          duration: 1500
+        });
+      }
+
+      // Go back after success
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1500);
+    } catch (err) {
+      console.error('图片处理失败', err);
       wx.showToast({
-        title: '保存修改成功！',
-        icon: 'success',
-        duration: 1500
+        title: err && err.message ? err.message : '图片处理失败，请重试',
+        icon: 'none'
       });
-    } else {
-      // ADD MODE: Create new recipe
-      db.addRecipe(recipeData);
-
-      wx.showToast({
-        title: '发布菜谱成功！',
-        icon: 'success',
-        duration: 1500
-      });
+      // 异常时复位按钮，允许重试（成功路径靠 navigateBack 离开，保持禁用防重复提交）
+      this.setData({ isSubmitting: false });
     }
-
-    // Go back after success
-    setTimeout(() => {
-      wx.navigateBack();
-    }, 1500);
   },
 
   // Delete handler (only available in edit mode)

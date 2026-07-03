@@ -455,6 +455,16 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 90;
+  animation: overlay-fade-in 0.3s ease forwards;
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .cart-popup-sheet {
@@ -468,11 +478,19 @@
   padding: 30rpx 40rpx 140rpx 40rpx;
   box-shadow: 0 -8rpx 30rpx rgba(0, 0, 0, 0.08);
   transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .cart-popup-sheet.slide-up {
-  transform: translateY(0);
+  animation: cart-slide-up 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes cart-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .cart-sheet-header {
@@ -811,7 +829,7 @@
   background-color: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(10px);
   z-index: 999;
-  transition: all 0.3s ease;
+  animation: detail-fade-in 0.3s ease forwards;
 }
 
 .detail-popup-sheet {
@@ -825,7 +843,25 @@
   z-index: 1000;
   box-shadow: 0 -12rpx 40rpx rgba(0, 0, 0, 0.08);
   overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+  animation: detail-slide-up 0.38s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes detail-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes detail-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .detail-close-btn {
