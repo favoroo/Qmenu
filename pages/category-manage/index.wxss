@@ -40,34 +40,6 @@
   display: none;
 }
 
-/* Drag area */
-.categories-drag-area {
-  position: relative;
-  overflow: hidden;
-  border-radius: 16rpx;
-}
-
-.category-row {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  padding: 24rpx 0;
-  background-color: #ffffff;
-  border-bottom: 1rpx solid var(--border-color);
-  box-sizing: border-box;
-}
-
-.cat-info {
-  gap: 16rpx;
-}
-
-.cat-name {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
 .default-badge {
   font-size: 18rpx;
   color: var(--text-sub);
@@ -75,30 +47,6 @@
   border: 1px solid var(--border-color);
   padding: 2rpx 8rpx;
   border-radius: 4rpx;
-}
-
-/* Drag handle */
-.drag-handle {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 32rpx;
-  height: 48rpx;
-  margin-right: 8rpx;
-  gap: 6rpx;
-}
-
-.drag-handle-bar {
-  width: 28rpx;
-  height: 4rpx;
-  background-color: var(--text-light);
-  border-radius: 2rpx;
-}
-
-/* Delete button */
-.cat-actions {
-  gap: 10rpx;
 }
 
 .delete-btn {
@@ -125,33 +73,6 @@
   font-size: 26rpx;
 }
 
-/* ============ Mode Toggle Tabs ============ */
-.mode-tabs {
-  background-color: #ffffff;
-  border-radius: 16rpx;
-  padding: 8rpx;
-  margin-bottom: 24rpx;
-  border: 1rpx solid var(--border-color);
-  gap: 8rpx;
-}
-
-.mode-tab {
-  flex: 1;
-  text-align: center;
-  padding: 18rpx 0;
-  font-size: 28rpx;
-  font-weight: 600;
-  color: var(--text-sub);
-  border-radius: 12rpx;
-  transition: all 0.2s ease;
-}
-
-.mode-tab.active {
-  background-color: var(--primary-color);
-  color: #ffffff;
-  box-shadow: var(--btn-shadow);
-}
-
 /* ============ Dish Management Mode ============ */
 .dish-tip {
   font-size: 22rpx;
@@ -161,7 +82,7 @@
 }
 
 .dish-scroll {
-  height: calc(100vh - 220rpx);
+  height: calc(100vh - 350rpx);
 }
 
 .dish-category-card {
@@ -170,10 +91,39 @@
   border: 2rpx solid transparent;
 }
 
+.dish-category-card.dragging {
+  opacity: 0.4;
+}
+
+.dish-category-card.drop-target-cat {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+  box-shadow: 0 0 0 4rpx rgba(45, 90, 67, 0.15);
+}
+
 .dish-category-card.drop-target {
   border-color: var(--primary-color);
   background-color: var(--primary-light);
   box-shadow: 0 0 0 4rpx rgba(45, 90, 67, 0.1);
+}
+
+/* Category Grip Handle */
+.cat-drag-handle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 48rpx;
+  height: 48rpx;
+  margin-right: 12rpx;
+  gap: 6rpx;
+}
+
+.cat-grip-bar {
+  width: 32rpx;
+  height: 4rpx;
+  background-color: var(--text-light);
+  border-radius: 2rpx;
 }
 
 .dish-cat-header {
@@ -284,3 +234,33 @@
   font-size: 26rpx;
   font-weight: bold;
 }
+
+/* ============ Drop Indicator Line (fixed) ============ */
+.drop-indicator-line {
+  position: fixed;
+  left: 48rpx;
+  right: 48rpx;
+  height: 6rpx;
+  background-color: var(--primary-color);
+  border-radius: 3rpx;
+  z-index: 9998;
+  pointer-events: none;
+  box-shadow: 0 0 12rpx rgba(45, 90, 67, 0.45);
+  transform: translateY(-3rpx);
+}
+
+.drop-indicator-line::before,
+.drop-indicator-line::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  transform: translateY(-50%);
+  box-shadow: 0 0 6rpx rgba(45, 90, 67, 0.45);
+}
+
+.drop-indicator-line::before { left: -7rpx; }
+.drop-indicator-line::after { right: -7rpx; }

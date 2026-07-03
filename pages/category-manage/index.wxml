@@ -1,137 +1,96 @@
 <view class="container">
-  <!-- 0. Mode Toggle Tabs -->
-  <view class="mode-tabs flex-row">
-    <view
-      class="mode-tab {{mode === 'dish' ? 'active' : ''}}"
-      bindtap="switchMode"
-      data-mode="dish"
-    >菜品管理</view>
-    <view
-      class="mode-tab {{mode === 'sort' ? 'active' : ''}}"
-      bindtap="switchMode"
-      data-mode="sort"
-    >分类排序</view>
+  <!-- 1. Add Category Section -->
+  <view class="add-section card">
+    <view class="section-title">添加新分类</view>
+    <view class="form-row flex-row">
+      <input
+        class="form-input flex-1 name-input"
+        placeholder="分类名称，如：精品炒菜"
+        value="{{newCatName}}"
+        bindinput="onNameInput"
+        placeholder-class="input-placeholder"
+      />
+      <button class="btn-primary btn-add" bindtap="handleAddCategory">添加</button>
+    </view>
   </view>
 
-  <!-- ============ Dish Management Mode ============ -->
-  <block wx:if="{{mode === 'dish'}}">
-    <view class="dish-tip">长按菜品可拖动到其他分类</view>
+  <view class="dish-tip">长按 ☰ 拖动菜品可排序或移动；长按 ⠿ 拖动可排序分类</view>
 
-    <scroll-view class="dish-scroll" scroll-y>
-      <view
-        wx:for="{{categoryCards}}"
-        wx:key="id"
-        class="dish-category-card card {{dragHighlightId === item.id ? 'drop-target' : ''}}"
-      >
-        <view class="dish-cat-header flex-row justify-between align-center">
-          <view class="flex-row align-center">
-            <text class="dish-cat-name">{{item.name}}</text>
-            <text class="dish-count-badge">{{item.recipes.length}}道</text>
-            <text class="default-badge" wx:if="{{item.isDefault}}">默认</text>
-          </view>
-        </view>
-
-        <block wx:if="{{item.recipes.length > 0}}">
+  <!-- 2. Categories & Dishes List -->
+  <scroll-view class="dish-scroll" scroll-y>
+    <view
+      wx:for="{{categoryCards}}"
+      wx:key="id"
+      class="dish-category-card card {{draggingCategoryId === item.id ? 'dragging' : ''}} {{dragHighlightCatId === item.id ? 'drop-target-cat' : ''}} {{dragHighlightId === item.id ? 'drop-target' : ''}}"
+    >
+      <!-- Category Header -->
+      <view class="dish-cat-header flex-row justify-between align-center">
+        <view class="flex-row align-center">
+          <!-- Category Drag Handle (⠿ Grip) -->
           <view
-            wx:for="{{item.recipes}}"
-            wx:for-item="recipe"
-            wx:key="id"
-            class="dish-row flex-row align-center {{draggingRecipe.id === recipe.id ? 'dragging' : ''}}"
-            bindlongpress="onRecipeLongPress"
-            catchtouchmove="onRecipeTouchMove"
-            catchtouchend="onRecipeTouchEnd"
-            data-recipe="{{recipe}}"
-            data-catid="{{item.id}}"
+            class="cat-drag-handle"
+            bindlongpress="onCategoryLongPress"
+            catchtouchmove="onCategoryTouchMove"
+            catchtouchend="onCategoryTouchEnd"
+            data-category="{{item}}"
           >
-            <view class="dish-grip">
-              <view class="dish-grip-bar"></view>
-              <view class="dish-grip-bar"></view>
-              <view class="dish-grip-bar"></view>
-            </view>
-            <text class="dish-name flex-1 text-ellipsis">{{recipe.name}}</text>
-            <text class="dish-price">¥{{recipe.price}}</text>
-            <view
-              class="dish-delete-btn"
-              catchtap="handleDeleteRecipe"
-              data-id="{{recipe.id}}"
-              data-name="{{recipe.name}}"
-            >删除</view>
+            <view class="cat-grip-bar"></view>
+            <view class="cat-grip-bar"></view>
+            <view class="cat-grip-bar"></view>
           </view>
-        </block>
-
-        <view wx:else class="dish-empty flex-row align-center justify-center">
-          <text>该分类暂无菜品</text>
+          <text class="dish-cat-name">{{item.name}}</text>
+          <text class="dish-count-badge">{{item.recipes.length}}道</text>
+          <text class="default-badge" wx:if="{{item.isDefault}}">默认</text>
         </view>
+        
+        <!-- Category Delete Button -->
+        <view
+          class="delete-btn flex-row justify-center align-center {{item.isDefault ? 'disabled' : ''}}"
+          catchtap="{{item.isDefault ? '' : 'handleDeleteCategory'}}"
+          data-id="{{item.id}}"
+          data-name="{{item.name}}"
+        >删除</view>
       </view>
 
-      <view style="height: 60rpx;"></view>
-    </scroll-view>
-  </block>
-
-  <!-- ============ Category Sort Mode (existing) ============ -->
-  <block wx:if="{{mode === 'sort'}}">
-    <view class="add-section card">
-      <view class="section-title">添加新分类</view>
-      <view class="form-row flex-row">
-        <input
-          class="form-input flex-1 name-input"
-          placeholder="分类名称，如：精品炒菜"
-          value="{{newCatName}}"
-          bindinput="onNameInput"
-          placeholder-class="input-placeholder"
-        />
-        <button class="btn-primary btn-add" bindtap="handleAddCategory">添加</button>
-      </view>
-    </view>
-
-    <view class="list-section card">
-      <view class="section-title flex-row justify-between">
-        <text>分类列表</text>
-        <text class="sub-tip">长按拖动可调整顺序</text>
-      </view>
-
-      <movable-area
-        class="categories-drag-area"
-        style="width: 100%; height: {{dragList.length > 0 ? dragList.length * itemHeight : 0}}px;"
-      >
-        <movable-view
-          wx:for="{{dragList}}"
+      <!-- Dishes List -->
+      <block wx:if="{{item.recipes.length > 0}}">
+        <view
+          wx:for="{{item.recipes}}"
+          wx:for-item="recipe"
           wx:key="id"
-          class="category-row flex-row justify-between align-center"
-          style="width: 100%; height: {{itemHeight}}px; z-index: {{index == moveId ? 10 : 1}}; opacity: {{index == moveId ? 0.9 : 1}};"
-          x="0"
-          y="{{item.y}}"
-          direction="vertical"
-          damping="40"
-          data-moveid="{{index}}"
-          bindchange="onDragChange"
-          bindtouchend="onDragEnd"
+          class="dish-row flex-row align-center {{draggingRecipe.id === recipe.id ? 'dragging' : ''}}"
+          bindlongpress="onRecipeLongPress"
+          catchtouchmove="onRecipeTouchMove"
+          catchtouchend="onRecipeTouchEnd"
+          data-recipe="{{recipe}}"
+          data-catid="{{item.id}}"
         >
-          <view class="cat-info flex-row align-center">
-            <view class="drag-handle">
-              <view class="drag-handle-bar"></view>
-              <view class="drag-handle-bar"></view>
-              <view class="drag-handle-bar"></view>
-            </view>
-            <text class="cat-name">{{item.name}}</text>
-            <text class="default-badge" wx:if="{{item.id === 'cat_default'}}">默认</text>
+          <view class="dish-grip">
+            <view class="dish-grip-bar"></view>
+            <view class="dish-grip-bar"></view>
+            <view class="dish-grip-bar"></view>
           </view>
+          <text class="dish-name flex-1 text-ellipsis">{{recipe.name}}</text>
+          <text class="dish-price">¥{{recipe.price}}</text>
+          <view
+            class="dish-delete-btn"
+            catchtap="handleDeleteRecipe"
+            data-id="{{recipe.id}}"
+            data-name="{{recipe.name}}"
+          >删除</view>
+        </view>
+      </block>
 
-          <view class="cat-actions flex-row align-center">
-            <view
-              class="delete-btn flex-row justify-center align-center {{item.id === 'cat_default' ? 'disabled' : ''}}"
-              catchtap="handleDeleteCategory"
-              data-id="{{item.id}}"
-              data-name="{{item.name}}"
-            >删除</view>
-          </view>
-        </movable-view>
-      </movable-area>
+      <view wx:else class="dish-empty flex-row align-center justify-center">
+        <text>该分类暂无菜品</text>
+      </view>
     </view>
-  </block>
+
+    <view style="height: 60rpx;"></view>
+  </scroll-view>
 </view>
 
-<!-- Floating drag element -->
+<!-- Floating Recipe drag element -->
 <view
   class="drag-float flex-row align-center"
   wx:if="{{draggingRecipe}}"
@@ -140,3 +99,19 @@
   <text class="drag-float-name text-ellipsis">{{draggingRecipe.name}}</text>
   <text class="drag-float-price">¥{{draggingRecipe.price}}</text>
 </view>
+
+<!-- Floating Category drag element -->
+<view
+  class="drag-float flex-row align-center"
+  wx:if="{{draggingCategory}}"
+  style="left: {{dragFloatX}}px; top: {{dragFloatY}}px; background-color: var(--primary-color);"
+>
+  <text class="drag-float-name text-ellipsis">{{draggingCategory.name}}</text>
+</view>
+
+<!-- Drop indicator line (fixed, no document flow impact) -->
+<view
+  class="drop-indicator-line"
+  wx:if="{{draggingRecipe && dragHighlightId && dropIndicatorY > 0}}"
+  style="top: {{dropIndicatorY}}px;"
+></view>

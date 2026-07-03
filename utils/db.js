@@ -215,15 +215,16 @@ const db = {
     const list = this.getRecipes();
     const index = list.findIndex(r => r.id === updated.id);
     if (index > -1) {
+      const old = list[index];
       list[index] = {
-        ...list[index],
+        ...old,
         ...updated,
-        price: parseFloat(updated.price) || 0,
-        hasMaterialStep: !!updated.hasMaterialStep,
-        materials: updated.materials || [],
-        materialsPublic: updated.materialsPublic !== false,
-        steps: updated.steps || [],
-        stepsPublic: updated.stepsPublic !== false
+        price: updated.price !== undefined ? (parseFloat(updated.price) || 0) : old.price,
+        hasMaterialStep: updated.hasMaterialStep !== undefined ? !!updated.hasMaterialStep : old.hasMaterialStep,
+        materials: updated.materials !== undefined ? updated.materials : old.materials,
+        materialsPublic: updated.materialsPublic !== undefined ? (updated.materialsPublic !== false) : old.materialsPublic,
+        steps: updated.steps !== undefined ? updated.steps : old.steps,
+        stepsPublic: updated.stepsPublic !== undefined ? (updated.stepsPublic !== false) : old.stepsPublic
       };
       this.saveRecipes(list);
       return true;
