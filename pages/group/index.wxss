@@ -135,6 +135,8 @@
 .code-lbl {
   font-size: 28rpx;
   color: #475569;
+  flex-shrink: 1;
+  margin-right: 16rpx;
 }
 
 .code-val {
@@ -308,6 +310,8 @@
   font-size: 24rpx;
   color: #EF4444;
   margin-right: 16rpx;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ===== 成员行操作 ===== */

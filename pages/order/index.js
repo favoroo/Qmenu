@@ -5,7 +5,7 @@ Page({
   data: {
     orders: [],
     filteredOrders: [],
-    activeTab: 'mine',        // 'mine' | 'kitchen'
+    activeTab: 'kitchen',     // 'mine' | 'kitchen'
     myOpenid: '',
     showSubscribeBanner: false,
     showDetailModal: false,
@@ -18,9 +18,9 @@ Page({
   },
 
   onLoad(options) {
-    // Support deep-link from subscription message: pages/order/index?tab=kitchen
-    if (options && options.tab === 'kitchen') {
-      this.setData({ activeTab: 'kitchen' });
+    // Support deep-link from subscription message: pages/order/index?tab=mine
+    if (options && options.tab === 'mine') {
+      this.setData({ activeTab: 'mine' });
     }
   },
 

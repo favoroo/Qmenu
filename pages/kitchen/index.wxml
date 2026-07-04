@@ -1,15 +1,12 @@
 <view class="container">
   <!-- Group Selector Header -->
-  <view class="group-bar flex-row align-center justify-between">
+  <view class="group-bar flex-row align-center">
     <picker bindchange="onGroupChange" value="{{groupIndex}}" range="{{groupsList}}" range-key="name" class="group-picker-wrapper">
       <view class="group-picker flex-row align-center">
         <text class="group-name">{{currentGroup.name || '未加入群组'}}</text>
         <text class="arrow-down">▼</text>
       </view>
     </picker>
-    <view class="group-actions flex-row align-center">
-      <view class="group-manage-btn" bindtap="goGroupManage">管理群组</view>
-    </view>
   </view>
 
   <!-- 1. Header Section -->
@@ -68,8 +65,8 @@
       
       <!-- Category Management shortcut at the bottom -->
       <view class="category-manage-btn flex-row justify-center align-center" bindtap="goCategoryManage" wx:if="{{isAdmin}}">
-        <icon type="info" size="12" color="#718096" style="margin-right: 6rpx;"></icon>
-        <text>分类管理</text>
+        <text class="manage-icon">⚙</text>
+        <text>管理</text>
       </view>
     </scroll-view>
 

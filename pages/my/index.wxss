@@ -120,7 +120,20 @@
 }
 
 .edit-icon {
-  font-size: 26rpx;
-  color: var(--text-light);
-  margin-left: 10rpx;
+  font-size: 22rpx;
+  color: var(--primary-color);
+  margin-left: 12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--primary-light);
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.profile-header:active .edit-icon {
+  background-color: var(--primary-soft);
+  transform: scale(0.92);
 }

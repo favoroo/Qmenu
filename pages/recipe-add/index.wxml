@@ -7,7 +7,7 @@
         <view class="uploader-placeholder flex-col justify-center align-center" wx:else>
           <view class="plus-icon">+</view>
           <view class="uploader-text">上传菜谱大图</view>
-          <view class="uploader-subtext">推荐 1:1 分辨率图片</view>
+          <view class="uploader-subtext">推荐 4:3 分辨率图片</view>
         </view>
       </view>
     </view>

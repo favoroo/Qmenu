@@ -1,8 +1,8 @@
 <view class="container">
   <!-- Tab Bar -->
   <view class="tab-bar flex-row">
-    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine">我的订单</view>
     <view class="tab-item {{activeTab === 'kitchen' ? 'active' : ''}}" bindtap="onTabChange" data-tab="kitchen">厨房订单</view>
+    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine">我的订单</view>
   </view>
 
   <!-- Subscribe Banner (kitchen tab only) -->

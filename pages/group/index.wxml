@@ -9,13 +9,13 @@
       
       <view class="action-section">
         <view class="input-row">
-          <input class="input" placeholder="输入6位永久邀请码" value="{{inviteCode}}" bindinput="onInputInviteCode"/>
-          <button class="btn-primary join-btn" bindtap="onJoinGroup">加入群组</button>
+          <input class="input" placeholder="输入新群组名称" value="{{newGroupName}}" bindinput="onInputGroupName"/>
+          <button class="btn-primary create-btn" bindtap="onCreateGroup">新建群组</button>
         </view>
         <view class="divider">或者</view>
         <view class="input-row">
-          <input class="input" placeholder="输入新群组名称" value="{{newGroupName}}" bindinput="onInputGroupName"/>
-          <button class="btn-secondary create-btn" bindtap="onCreateGroup">新建群组</button>
+          <input class="input" placeholder="输入6位永久邀请码" value="{{inviteCode}}" bindinput="onInputInviteCode"/>
+          <button class="btn-secondary join-btn" bindtap="onJoinGroup">加入群组</button>
         </view>
       </view>
     </view>

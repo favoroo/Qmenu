@@ -104,11 +104,26 @@
 }
 
 .category-manage-btn {
-  padding: 30rpx 10rpx;
+  margin: 24rpx 20rpx 30rpx;
+  padding: 14rpx 0;
   font-size: 22rpx;
-  color: var(--text-sub);
-  border-top: 1rpx dashed var(--border-color);
-  margin-top: 20rpx;
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+  border: 1rpx solid var(--primary-soft);
+  border-radius: 32rpx;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.category-manage-btn:active {
+  background-color: var(--primary-soft);
+  transform: scale(0.96);
+}
+
+.category-manage-btn .manage-icon {
+  font-size: 22rpx;
+  margin-right: 6rpx;
+  opacity: 0.8;
 }
 
 /* Right Recipe Cards Scroll */
@@ -135,8 +150,8 @@
 }
 
 .recipe-image {
-  width: 150rpx;
-  height: 150rpx;
+  width: 180rpx;
+  height: 135rpx;
   border-radius: 12rpx;
   margin-right: 20rpx;
   background-color: var(--bg-light);
@@ -148,7 +163,7 @@
 }
 
 .recipe-info {
-  height: 150rpx;
+  height: 135rpx;
   padding: 2rpx 0;
 }
 
@@ -911,7 +926,8 @@
 
 .detail-cover-image {
   width: 100%;
-  height: 520rpx;
+  height: 562rpx;
+  aspect-ratio: 4 / 3;
   background-color: var(--bg-light);
 }
 
