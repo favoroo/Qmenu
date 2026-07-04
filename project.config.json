@@ -41,6 +41,7 @@
   "libVersion": "2.30.0",
   "appid": "wx5c7dd71f1fddceaf",
   "projectname": "Q 菜单",
+  "cloudfunctionRoot": "cloudfunctions/",
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",

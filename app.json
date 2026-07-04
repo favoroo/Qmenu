@@ -5,7 +5,8 @@
     "pages/my/index",
     "pages/recipe-add/index",
     "pages/category-manage/index",
-    "pages/order-confirm/index"
+    "pages/order-confirm/index",
+    "pages/login/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

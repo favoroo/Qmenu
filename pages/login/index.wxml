@@ -1,0 +1,25 @@
+<view class="container">
+  <view class="login-card">
+    <view class="logo-area">
+      <image class="logo" src="/assets/images/logo.png" mode="aspectFit"></image>
+      <text class="title">欢迎使用 Q 菜单</text>
+      <text class="subtitle">请完善您的头像与昵称，以便参与协作与拼单</text>
+    </view>
+
+    <view class="form-group">
+      <view class="form-item avatar-picker-item">
+        <text class="label">头像</text>
+        <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <image class="avatar" src="{{avatarUrl || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+        </button>
+      </view>
+
+      <view class="form-item">
+        <text class="label">昵称</text>
+        <input type="nickname" class="input" placeholder="请输入昵称" value="{{nickName}}" bindblur="onInputNickname" bindinput="onInputNickname"/>
+      </view>
+    </view>
+
+    <button class="btn-submit" bindtap="onSubmit">保存并进入</button>
+  </view>
+</view>

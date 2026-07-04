@@ -25,7 +25,11 @@ Page({
     }
   },
 
-  loadCart() {
+  async loadCart() {
+    const app = getApp();
+    if (app.globalData.loginPromise) {
+      await app.globalData.loginPromise;
+    }
     const cart = db.getCart();
     const items = Object.values(cart);
     const total = db.getCartTotal();

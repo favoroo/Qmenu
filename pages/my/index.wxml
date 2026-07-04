@@ -1,8 +1,11 @@
 <view class="container">
   <!-- 1. Profile Header Box -->
-  <view class="profile-header flex-col align-center justify-center">
-    <image class="profile-avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"></image>
-    <view class="profile-nickname">{{userInfo.nickName}}</view>
+  <view class="profile-header flex-col align-center justify-center" bindtap="goToEditProfile">
+    <image class="profile-avatar" src="{{userInfo.avatarUrl || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+    <view class="profile-nickname flex-row align-center">
+      <text>{{userInfo.nickName}}</text>
+      <text class="edit-icon">✎</text>
+    </view>
   </view>
 
   <!-- 2. Options Menu Lists -->
@@ -36,14 +39,6 @@
         <view class="menu-item-left flex-row align-center">
           <icon type="waiting" size="18" color="#4a5568" style="margin-right: 20rpx;"></icon>
           <text>关于 Q 菜单</text>
-        </view>
-        <view class="arrow-right"></view>
-      </view>
-
-      <view class="menu-item flex-row justify-between align-center" bindtap="resetCache">
-        <view class="menu-item-left flex-row align-center">
-          <icon type="warn" size="18" color="#ff4d4f" style="margin-right: 20rpx;"></icon>
-          <text class="text-danger">恢复系统演示数据</text>
         </view>
         <view class="arrow-right"></view>
       </view>

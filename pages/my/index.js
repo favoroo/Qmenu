@@ -1,9 +1,10 @@
+const app = getApp();
+
 Page({
   data: {
     userInfo: {
       nickName: '饕餮吃货',
-      avatarUrl: '/assets/images/logo.png',
-      role: 'admin'
+      avatarUrl: '/assets/images/logo.png'
     }
   },
 
@@ -12,7 +13,7 @@ Page({
   },
 
   loadUserInfo() {
-    const userInfo = wx.getStorageSync('userInfo');
+    const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
     if (userInfo) {
       this.setData({
         userInfo: userInfo
@@ -20,40 +21,9 @@ Page({
     }
   },
 
-  // Reset all local storage data to initial states
-  resetCache() {
-    const self = this;
-    wx.showModal({
-      title: '恢复默认设置',
-      content: '该操作将清空本地所有自定义菜谱、分类及订单记录，并恢复系统默认演示数据。确定要继续吗？',
-      confirmColor: '#ff4d4f',
-      success(res) {
-        if (res.confirm) {
-          // 先清理本地持久化图片文件（clearStorageSync 不会清理文件）
-          const imageUtil = require('../../utils/image.js');
-          imageUtil.clearAll();
-
-          wx.clearStorageSync();
-          
-          // Re-initialize default mock DB
-          const db = require('../../utils/db.js');
-          db.init();
-          
-          wx.setStorageSync('userInfo', {
-            nickName: '饕餮吃货',
-            avatarUrl: '/assets/images/logo.png',
-            role: 'admin'
-          });
-          
-          self.loadUserInfo();
-          
-          wx.showToast({
-            title: '重置完成',
-            icon: 'success'
-          });
-          wx.vibrateLong();
-        }
-      }
+  goToEditProfile() {
+    wx.navigateTo({
+      url: '/pages/login/index'
     });
   },
 

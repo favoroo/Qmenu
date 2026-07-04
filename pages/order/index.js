@@ -33,7 +33,11 @@ Page({
     });
   },
 
-  loadOrders() {
+  async loadOrders() {
+    const app = getApp();
+    if (app.globalData.loginPromise) {
+      await app.globalData.loginPromise;
+    }
     const orders = db.getOrders();
     this.setData({
       orders: orders

@@ -53,7 +53,11 @@ Page({
     }
   },
 
-  loadCategories(callback) {
+  async loadCategories(callback) {
+    const app = getApp();
+    if (app.globalData.loginPromise) {
+      await app.globalData.loginPromise;
+    }
     const categories = db.getCategories();
     this.setData({
       categories: categories

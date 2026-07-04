@@ -101,3 +101,9 @@
   color: var(--text-light);
   margin-top: 6rpx;
 }
+
+.edit-icon {
+  font-size: 26rpx;
+  color: var(--text-light);
+  margin-left: 10rpx;
+}

@@ -75,7 +75,12 @@ Page({
     });
   },
 
-  loadData() {
+  async loadData() {
+    const app = getApp();
+    if (app.globalData.loginPromise) {
+      await app.globalData.loginPromise;
+    }
+
     const categories = db.getCategories();
     const recipes = db.getRecipes();
     

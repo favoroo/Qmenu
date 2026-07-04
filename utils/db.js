@@ -1,24 +1,13 @@
 const imageUtil = require('./image.js');
 
-// ===== 同步存储适配层 =====
-// 当前：基于 wx 本地缓存（同步）。
-// 迁移指引（接入服务器）：将下方 get/set/remove/clear 替换为 wx.request 调用后端 REST API。
-//   注意 wx.request 为异步，届时需把 db 各方法改为 async/await，调用方相应 await。
-const storage = {
-  get(key) { return wx.getStorageSync(key); },
-  set(key, value) { wx.setStorageSync(key, value); return value; },
-  remove(key) { wx.removeStorageSync(key); },
-  clear() { wx.clearStorageSync(); }
+// 内存缓存
+let cloudCache = {
+  categories: [],
+  recipes: [],
+  orders: [],
+  cart: {}
 };
 
-const STORAGE_KEYS = {
-  CATEGORIES: 'DB_CATEGORIES',
-  RECIPES: 'DB_RECIPES',
-  CART: 'DB_CART',
-  ORDERS: 'DB_ORDERS'
-};
-
-// Seed default data
 const DEFAULT_CATEGORIES = [
   { id: 'cat_default', name: '默认分类', sort: 1 },
   { id: 'cat_signature', name: '招牌私房菜', sort: 2 },
@@ -50,7 +39,7 @@ const DEFAULT_RECIPES = [
     steps: [
       { image: '', desc: '整鸡洗净，冷水下锅，加入大葱段、姜片、料酒，大火烧开转中火煮20分钟至刚熟。', timer: 20 },
       { image: '', desc: '捞出鸡肉，立刻放入冰水中浸泡10分钟，使鸡皮脆嫩爽口，随后沥干水分，用手撕成大小均匀的小块。', timer: 10 },
-      { image: '', desc: '将鲜花椒、小米辣、大蒜剁碎放入碗中。锅中烧热花椒油，趁热淋在碎料上激发出香味，再加入生抽、少许盐、糖、鸡精和两勺煮鸡的原汤拌匀。', timer: 3 },
+      { image: '', desc: '将鲜花椒、小米辣、大蒜剁碎放入碗中。锅中烧热花椒油，趁热淋在碎料上激发出香味，再加入生抽、少许盐、糖、鸡精 and 两勺煮鸡的原汤拌匀。', timer: 3 },
       { image: '', desc: '将调好的椒麻汁均匀淋在撕好的鸡肉块上，撒上葱花，拌匀后静置入味即可食用。', timer: 5 }
     ]
   },
@@ -115,38 +104,95 @@ const DEFAULT_RECIPES = [
 ];
 
 const db = {
-  // Initialize Database with seed data if empty
-  init() {
-    let categories = storage.get(STORAGE_KEYS.CATEGORIES);
-    if (!categories || categories.length === 0) {
-      storage.set(STORAGE_KEYS.CATEGORIES, DEFAULT_CATEGORIES);
-    }
-    
-    let recipes = storage.get(STORAGE_KEYS.RECIPES);
-    if (!recipes || recipes.length === 0 || !recipes[0].hasOwnProperty('hasMaterialStep')) {
-      storage.set(STORAGE_KEYS.RECIPES, DEFAULT_RECIPES);
-    }
-    
-    let orders = storage.get(STORAGE_KEYS.ORDERS);
-    if (!orders) {
-      storage.set(STORAGE_KEYS.ORDERS, []);
-    }
-    
-    let cart = storage.get(STORAGE_KEYS.CART);
-    if (!cart) {
-      storage.set(STORAGE_KEYS.CART, {});
+  // 从云端加载所有数据并缓存
+  async initCloudData() {
+    try {
+      const dbInstance = wx.cloud.database();
+      
+      // 1. 获取分类
+      let catRes = await dbInstance.collection('categories').get();
+      let categories = catRes.data;
+      if (categories.length === 0) {
+        for (let cat of DEFAULT_CATEGORIES) {
+          const res = await dbInstance.collection('categories').add({
+            data: {
+              id: cat.id,
+              name: cat.name,
+              sort: cat.sort
+            }
+          });
+          cat._id = res.id;
+        }
+        categories = DEFAULT_CATEGORIES;
+      }
+      cloudCache.categories = categories;
+
+      // 2. 获取菜谱
+      let recRes = await dbInstance.collection('recipes').get();
+      let recipes = recRes.data;
+      if (recipes.length === 0) {
+        for (let rec of DEFAULT_RECIPES) {
+          const res = await dbInstance.collection('recipes').add({
+            data: {
+              id: rec.id,
+              name: rec.name,
+              categoryId: rec.categoryId,
+              price: rec.price,
+              image: rec.image,
+              desc: rec.desc,
+              status: rec.status,
+              hasMaterialStep: rec.hasMaterialStep,
+              materials: rec.materials,
+              materialsPublic: rec.materialsPublic,
+              steps: rec.steps,
+              stepsPublic: rec.stepsPublic
+            }
+          });
+          rec._id = res.id;
+        }
+        recipes = DEFAULT_RECIPES;
+      }
+      cloudCache.recipes = recipes;
+
+      // 3. 获取订单
+      let ordRes = await dbInstance.collection('orders').orderBy('createTime', 'desc').get();
+      cloudCache.orders = ordRes.data;
+
+      // 4. 获取购物车
+      let cartRes = await dbInstance.collection('cart').limit(1).get();
+      if (cartRes.data.length > 0) {
+        cloudCache.cart = cartRes.data[0].items || {};
+      } else {
+        cloudCache.cart = {};
+        await dbInstance.collection('cart').add({
+          data: { items: {} }
+        });
+      }
+    } catch (err) {
+      console.error('初始化云端数据失败', err);
+      // 如果出错，尝试从本地缓存读取做降级
+      cloudCache.categories = wx.getStorageSync('DB_CATEGORIES') || DEFAULT_CATEGORIES;
+      cloudCache.recipes = wx.getStorageSync('DB_RECIPES') || DEFAULT_RECIPES;
+      cloudCache.orders = wx.getStorageSync('DB_ORDERS') || [];
+      cloudCache.cart = wx.getStorageSync('DB_CART') || {};
     }
   },
 
   // --- Category APIs ---
   getCategories() {
-    this.init();
-    const list = storage.get(STORAGE_KEYS.CATEGORIES) || [];
-    return list.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+    return cloudCache.categories.sort((a, b) => (a.sort || 0) - (b.sort || 0));
   },
 
   saveCategories(categories) {
-    storage.set(STORAGE_KEYS.CATEGORIES, categories);
+    cloudCache.categories = categories;
+    const dbInstance = wx.cloud.database();
+    categories.forEach(async (cat) => {
+      if (cat._id) {
+        await dbInstance.collection('categories').doc(cat._id).update({
+          data: { name: cat.name, sort: cat.sort }
+        });
+      }
+    });
   },
 
   addCategory(name, sort = 10) {
@@ -157,37 +203,49 @@ const db = {
       sort: parseInt(sort) || 10
     };
     list.push(newCat);
-    this.saveCategories(list);
+    
+    const dbInstance = wx.cloud.database();
+    dbInstance.collection('categories').add({
+      data: newCat
+    }).then(res => {
+      newCat._id = res.id;
+    });
+
     return newCat;
   },
 
   deleteCategory(catId) {
     let list = this.getCategories();
+    const target = list.find(item => item.id === catId);
     list = list.filter(item => item.id !== catId);
-    this.saveCategories(list);
+    cloudCache.categories = list;
 
-    // Re-assign dishes in deleted category to "cat_default" or delete their reference
+    if (target && target._id) {
+      const dbInstance = wx.cloud.database();
+      dbInstance.collection('categories').doc(target._id).remove();
+    }
+
     const recipes = this.getRecipes();
-    let changed = false;
     recipes.forEach(r => {
       if (r.categoryId === catId) {
-        r.categoryId = 'cat_default'; // move to default
-        changed = true;
+        r.categoryId = 'cat_default';
+        if (r._id) {
+          const dbInstance = wx.cloud.database();
+          dbInstance.collection('recipes').doc(r._id).update({
+            data: { categoryId: 'cat_default' }
+          });
+        }
       }
     });
-    if (changed) {
-      this.saveRecipes(recipes);
-    }
   },
 
   // --- Recipe APIs ---
   getRecipes() {
-    this.init();
-    return storage.get(STORAGE_KEYS.RECIPES) || [];
+    return cloudCache.recipes || [];
   },
 
   saveRecipes(recipes) {
-    storage.set(STORAGE_KEYS.RECIPES, recipes);
+    cloudCache.recipes = recipes;
   },
 
   addRecipe(recipe) {
@@ -199,7 +257,7 @@ const db = {
       price: parseFloat(recipe.price) || 0,
       image: recipe.image || '/assets/images/default_food.png',
       desc: recipe.desc || '',
-      status: 1, // 1: Active, 0: Draft/Inactive
+      status: 1,
       hasMaterialStep: !!recipe.hasMaterialStep,
       materials: recipe.materials || [],
       materialsPublic: recipe.materialsPublic !== false,
@@ -207,7 +265,14 @@ const db = {
       stepsPublic: recipe.stepsPublic !== false
     };
     list.push(newRecipe);
-    this.saveRecipes(list);
+
+    const dbInstance = wx.cloud.database();
+    dbInstance.collection('recipes').add({
+      data: newRecipe
+    }).then(res => {
+      newRecipe._id = res.id;
+    });
+
     return newRecipe;
   },
 
@@ -216,7 +281,7 @@ const db = {
     const index = list.findIndex(r => r.id === updated.id);
     if (index > -1) {
       const old = list[index];
-      list[index] = {
+      const newRec = {
         ...old,
         ...updated,
         price: updated.price !== undefined ? (parseFloat(updated.price) || 0) : old.price,
@@ -226,7 +291,15 @@ const db = {
         steps: updated.steps !== undefined ? updated.steps : old.steps,
         stepsPublic: updated.stepsPublic !== undefined ? (updated.stepsPublic !== false) : old.stepsPublic
       };
-      this.saveRecipes(list);
+      list[index] = newRec;
+
+      if (newRec._id) {
+        const dbInstance = wx.cloud.database();
+        const { _id, _openid, ...updateData } = newRec;
+        dbInstance.collection('recipes').doc(_id).update({
+          data: updateData
+        });
+      }
       return true;
     }
     return false;
@@ -235,22 +308,32 @@ const db = {
   deleteRecipe(id) {
     const list = this.getRecipes();
     const target = list.find(r => r.id === id);
-    // 清理本地图片文件（封面+步骤图），防止 100MB 上限溢出
-    if (target) imageUtil.removeImagesSync(imageUtil.collectRecipeImages(target));
-    this.saveRecipes(list.filter(item => item.id !== id));
-    
-    // Also remove from cart if it's there
+    if (target) {
+      imageUtil.removeImagesSync(imageUtil.collectRecipeImages(target));
+      if (target._id) {
+        const dbInstance = wx.cloud.database();
+        dbInstance.collection('recipes').doc(target._id).remove();
+      }
+    }
+    cloudCache.recipes = list.filter(item => item.id !== id);
     this.removeFromCartCompletely(id);
   },
 
   // --- Cart APIs ---
   getCart() {
-    this.init();
-    return storage.get(STORAGE_KEYS.CART) || {};
+    return cloudCache.cart || {};
   },
 
   saveCart(cart) {
-    storage.set(STORAGE_KEYS.CART, cart);
+    cloudCache.cart = cart;
+    const dbInstance = wx.cloud.database();
+    dbInstance.collection('cart').get().then(res => {
+      if (res.data.length > 0) {
+        dbInstance.collection('cart').doc(res.data[0]._id).update({
+          data: { items: cart }
+        });
+      }
+    });
   },
 
   addToCart(recipe) {
@@ -289,7 +372,7 @@ const db = {
   },
 
   clearCart() {
-    storage.set(STORAGE_KEYS.CART, {});
+    this.saveCart({});
     return {};
   },
 
@@ -313,16 +396,29 @@ const db = {
 
   // --- Order APIs ---
   getOrders() {
-    this.init();
-    return storage.get(STORAGE_KEYS.ORDERS) || [];
+    return cloudCache.orders || [];
   },
 
   saveOrders(orders) {
-    storage.set(STORAGE_KEYS.ORDERS, orders);
+    cloudCache.orders = orders;
+    const dbInstance = wx.cloud.database();
+    orders.forEach(async (ord) => {
+      if (ord._id) {
+        await dbInstance.collection('orders').doc(ord._id).update({
+          data: { status: ord.status }
+        });
+      }
+    });
   },
 
   deleteOrder(orderId) {
-    this.saveOrders(this.getOrders().filter(o => o.id !== orderId));
+    const orders = this.getOrders();
+    const target = orders.find(o => o.id === orderId);
+    if (target && target._id) {
+      const dbInstance = wx.cloud.database();
+      dbInstance.collection('orders').doc(target._id).remove();
+    }
+    cloudCache.orders = orders.filter(o => o.id !== orderId);
   },
 
   createOrder(remark = '', isFromShare = false, sharerId = '') {
@@ -332,7 +428,8 @@ const db = {
 
     const orders = this.getOrders();
     const orderId = 'ORD' + Date.now() + Math.floor(Math.random() * 900 + 100);
-    
+    const userInfo = wx.getStorageSync('userInfo') || { nickName: '吃货', avatarUrl: '/assets/images/logo.png' };
+
     const newOrder = {
       id: orderId,
       createTime: this.formatTime(new Date()),
@@ -345,18 +442,27 @@ const db = {
       })),
       totalAmount: this.getCartTotal(),
       remark: remark,
-      status: 'pending', // pending: 待制作, done: 已完成
+      status: 'pending',
       isFromShare: isFromShare,
-      sharerId: sharerId
+      sharerId: sharerId,
+      userName: userInfo.nickName,
+      userAvatar: userInfo.avatarUrl
     };
 
-    orders.unshift(newOrder); // Add to beginning of array
-    this.saveOrders(orders);
+    orders.unshift(newOrder);
+    cloudCache.orders = orders;
+
+    const dbInstance = wx.cloud.database();
+    dbInstance.collection('orders').add({
+      data: newOrder
+    }).then(res => {
+      newOrder._id = res.id;
+    });
+
     this.clearCart();
     return newOrder;
   },
 
-  // Helper date formatter
   formatTime(date) {
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
