@@ -10,6 +10,11 @@ let cloudCache = {
 
 let currentGroupId = '';
 
+// 本地缓存键常量
+const CACHE_PREFIX = 'cloudData_';
+const LAST_GROUP_KEY = 'lastGroupId';
+const GROUPS_LIST_KEY = 'cachedGroupsList';
+
 const DEFAULT_CATEGORIES = [
   { id: 'cat_default', name: '默认分类', sort: 1 },
   { id: 'cat_signature', name: '招牌私房菜', sort: 2 },
@@ -115,7 +120,59 @@ const db = {
     return currentGroupId;
   },
 
-  // 从云端加载所有数据并缓存 (支持 groupId 隔离)
+  // --- 本地缓存层（同步，用于首屏瞬时渲染）---
+  loadFromLocalCache(groupId) {
+    if (!groupId) return false;
+    try {
+      const cached = wx.getStorageSync(CACHE_PREFIX + groupId);
+      if (cached && cached.categories) {
+        cloudCache.categories = cached.categories;
+        cloudCache.recipes = cached.recipes || [];
+        cloudCache.orders = cached.orders || [];
+        cloudCache.cart = cached.cart || {};
+        currentGroupId = groupId;
+        return true;
+      }
+    } catch (e) {
+      console.warn('[db] loadFromLocalCache failed', e);
+    }
+    return false;
+  },
+
+  saveToLocalCache(groupId) {
+    if (!groupId) return;
+    try {
+      wx.setStorageSync(CACHE_PREFIX + groupId, {
+        categories: cloudCache.categories,
+        recipes: cloudCache.recipes,
+        orders: cloudCache.orders,
+        cart: cloudCache.cart,
+        updatedAt: Date.now()
+      });
+    } catch (e) {
+      console.warn('[db] saveToLocalCache failed', e);
+    }
+  },
+
+  setLastGroupId(groupId) {
+    if (groupId) {
+      try { wx.setStorageSync(LAST_GROUP_KEY, groupId); } catch (e) {}
+    }
+  },
+
+  getLastGroupId() {
+    try { return wx.getStorageSync(LAST_GROUP_KEY) || ''; } catch (e) { return ''; }
+  },
+
+  cacheGroupsList(groups) {
+    try { wx.setStorageSync(GROUPS_LIST_KEY, groups); } catch (e) {}
+  },
+
+  getCachedGroupsList() {
+    try { return wx.getStorageSync(GROUPS_LIST_KEY) || []; } catch (e) { return []; }
+  },
+
+  // 从云端加载所有数据并缓存 (支持 groupId 隔离，并行查询)
   async initCloudData(groupId) {
     if (groupId) {
       currentGroupId = groupId;
@@ -129,79 +186,102 @@ const db = {
       return;
     }
 
+    const gid = currentGroupId;
     try {
       const dbInstance = wx.cloud.database();
-      
-      // 1. 获取该群组的分类
-      let catRes = await dbInstance.collection('categories').where({ groupId: currentGroupId }).get();
-      let categories = catRes.data;
-      if (categories.length === 0) {
-        for (let cat of DEFAULT_CATEGORIES) {
-          const res = await dbInstance.collection('categories').add({
-            data: {
-              id: cat.id,
-              groupId: currentGroupId,
-              name: cat.name,
-              sort: cat.sort
-            }
-          });
-          cat._id = res.id;
-        }
-        categories = DEFAULT_CATEGORIES.map(c => ({ ...c, groupId: currentGroupId }));
-      }
+
+      // 4 个独立查询并行执行（原串行 → 并行）
+      const [categories, recipes, orders, cart] = await Promise.all([
+        this._fetchCategories(dbInstance, gid),
+        this._fetchRecipes(dbInstance, gid),
+        this._fetchOrders(dbInstance, gid),
+        this._fetchCart(dbInstance, gid)
+      ]);
+
       cloudCache.categories = categories;
-
-      // 2. 获取该群组的菜谱
-      let recRes = await dbInstance.collection('recipes').where({ groupId: currentGroupId }).get();
-      let recipes = recRes.data;
-      if (recipes.length === 0) {
-        for (let rec of DEFAULT_RECIPES) {
-          const res = await dbInstance.collection('recipes').add({
-            data: {
-              id: rec.id,
-              groupId: currentGroupId,
-              categoryId: rec.categoryId,
-              price: rec.price,
-              image: rec.image,
-              desc: rec.desc,
-              status: rec.status,
-              hasMaterialStep: rec.hasMaterialStep,
-              materials: rec.materials,
-              materialsPublic: rec.materialsPublic,
-              steps: rec.steps,
-              stepsPublic: rec.stepsPublic,
-              creatorId: 'system',
-              creatorName: '系统'
-            }
-          });
-          rec._id = res.id;
-        }
-        recipes = DEFAULT_RECIPES.map(r => ({ ...r, groupId: currentGroupId, creatorId: 'system', creatorName: '系统' }));
-      }
       cloudCache.recipes = recipes;
+      cloudCache.orders = orders;
+      cloudCache.cart = cart;
 
-      // 3. 获取该群组的订单
-      let ordRes = await dbInstance.collection('orders')
-        .where({ groupId: currentGroupId })
-        .orderBy('createTime', 'desc')
-        .get();
-      cloudCache.orders = ordRes.data;
-
-      // 4. 获取当前用户在该群组的购物车
-      let cartRes = await dbInstance.collection('cart').where({ groupId: currentGroupId }).limit(1).get();
-      if (cartRes.data.length > 0) {
-        cloudCache.cart = cartRes.data[0].items || {};
-      } else {
-        cloudCache.cart = {};
-        await dbInstance.collection('cart').add({
-          data: {
-            groupId: currentGroupId,
-            items: {}
-          }
-        });
-      }
+      // 落盘本地缓存，供下次冷启动瞬时渲染
+      this.saveToLocalCache(gid);
     } catch (err) {
       console.error('初始化云端数据失败', err);
+      // 云端失败时降级读本地缓存，保证可用性
+      this.loadFromLocalCache(gid);
+    }
+  },
+
+  async _fetchCategories(dbInstance, gid) {
+    let catRes = await dbInstance.collection('categories').where({ groupId: gid }).get();
+    let categories = catRes.data;
+    if (categories.length === 0) {
+      for (let cat of DEFAULT_CATEGORIES) {
+        const res = await dbInstance.collection('categories').add({
+          data: {
+            id: cat.id,
+            groupId: gid,
+            name: cat.name,
+            sort: cat.sort
+          }
+        });
+        cat._id = res.id;
+      }
+      categories = DEFAULT_CATEGORIES.map(c => ({ ...c, groupId: gid }));
+    }
+    return categories;
+  },
+
+  async _fetchRecipes(dbInstance, gid) {
+    let recRes = await dbInstance.collection('recipes').where({ groupId: gid }).get();
+    let recipes = recRes.data;
+    if (recipes.length === 0) {
+      for (let rec of DEFAULT_RECIPES) {
+        const res = await dbInstance.collection('recipes').add({
+          data: {
+            id: rec.id,
+            groupId: gid,
+            categoryId: rec.categoryId,
+            price: rec.price,
+            image: rec.image,
+            desc: rec.desc,
+            status: rec.status,
+            hasMaterialStep: rec.hasMaterialStep,
+            materials: rec.materials,
+            materialsPublic: rec.materialsPublic,
+            steps: rec.steps,
+            stepsPublic: rec.stepsPublic,
+            creatorId: 'system',
+            creatorName: '系统'
+          }
+        });
+        rec._id = res.id;
+      }
+      recipes = DEFAULT_RECIPES.map(r => ({ ...r, groupId: gid, creatorId: 'system', creatorName: '系统' }));
+    }
+    return recipes;
+  },
+
+  async _fetchOrders(dbInstance, gid) {
+    let ordRes = await dbInstance.collection('orders')
+      .where({ groupId: gid })
+      .orderBy('createTime', 'desc')
+      .get();
+    return ordRes.data;
+  },
+
+  async _fetchCart(dbInstance, gid) {
+    let cartRes = await dbInstance.collection('cart').where({ groupId: gid }).limit(1).get();
+    if (cartRes.data.length > 0) {
+      return cartRes.data[0].items || {};
+    } else {
+      await dbInstance.collection('cart').add({
+        data: {
+          groupId: gid,
+          items: {}
+        }
+      });
+      return {};
     }
   },
 
@@ -212,6 +292,7 @@ const db = {
 
   saveCategories(categories) {
     cloudCache.categories = categories;
+    this.saveToLocalCache(currentGroupId);
     const dbInstance = wx.cloud.database();
     categories.forEach(async (cat) => {
       if (cat._id) {
@@ -240,6 +321,7 @@ const db = {
       newCat._id = res.id;
     });
 
+    this.saveToLocalCache(currentGroupId);
     return newCat;
   },
 
@@ -266,6 +348,8 @@ const db = {
         }
       }
     });
+
+    this.saveToLocalCache(currentGroupId);
   },
 
   // --- Recipe APIs ---
@@ -275,6 +359,7 @@ const db = {
 
   saveRecipes(recipes) {
     cloudCache.recipes = recipes;
+    this.saveToLocalCache(currentGroupId);
   },
 
   addRecipe(recipe) {
@@ -307,6 +392,7 @@ const db = {
       newRecipe._id = res.id;
     });
 
+    this.saveToLocalCache(currentGroupId);
     return newRecipe;
   },
 
@@ -334,6 +420,7 @@ const db = {
           data: updateData
         });
       }
+      this.saveToLocalCache(currentGroupId);
       return true;
     }
     return false;
@@ -351,6 +438,7 @@ const db = {
     }
     cloudCache.recipes = list.filter(item => item.id !== id);
     this.removeFromCartCompletely(id);
+    this.saveToLocalCache(currentGroupId);
   },
 
   // --- Cart APIs ---
@@ -361,6 +449,7 @@ const db = {
   saveCart(cart) {
     if (!currentGroupId) return;
     cloudCache.cart = cart;
+    this.saveToLocalCache(currentGroupId);
     const dbInstance = wx.cloud.database();
     dbInstance.collection('cart').where({ groupId: currentGroupId }).get().then(res => {
       if (res.data.length > 0) {
@@ -436,6 +525,7 @@ const db = {
 
   saveOrders(orders) {
     cloudCache.orders = orders;
+    this.saveToLocalCache(currentGroupId);
     const dbInstance = wx.cloud.database();
     orders.forEach(async (ord) => {
       if (ord._id) {
@@ -454,6 +544,7 @@ const db = {
       dbInstance.collection('orders').doc(target._id).remove();
     }
     cloudCache.orders = orders.filter(o => o.id !== orderId);
+    this.saveToLocalCache(currentGroupId);
   },
 
   createOrder(remark = '', isFromShare = false, sharerId = '', chef = null) {
@@ -464,7 +555,7 @@ const db = {
 
     const orders = this.getOrders();
     const orderId = 'ORD' + Date.now() + Math.floor(Math.random() * 900 + 100);
-    const userInfo = wx.getStorageSync('userInfo') || { nickName: '吃货', avatarUrl: '/assets/images/logo.png' };
+    const userInfo = wx.getStorageSync('userInfo') || { nickName: '吃货', avatarUrl: '/assets/images/default_avatar.png' };
 
     const chefId = chef ? chef.openid : '';
     const chefName = chef ? chef.nickName : '';
@@ -505,6 +596,7 @@ const db = {
     });
 
     this.clearCart();
+    this.saveToLocalCache(currentGroupId);
     return newOrder;
   },
 

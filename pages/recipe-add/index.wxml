@@ -71,7 +71,7 @@
         <text class="form-label" style="margin-bottom: 4rpx;">用料做法</text>
         <text class="uploader-subtext" style="margin-top: 0;">记录食材用料及烹饪步骤</text>
       </view>
-      <switch color="#2D5A43" checked="{{hasMaterialStep}}" bindchange="onHasMaterialStepChange" />
+      <switch color="#2563EB" checked="{{hasMaterialStep}}" bindchange="onHasMaterialStepChange" />
     </view>
 
     <!-- 用料做法详细录入 -->
@@ -86,7 +86,7 @@
         </view>
         <view class="flex-row align-center">
           <text class="toggle-label">公开</text>
-          <switch class="mini-switch" color="#2D5A43" checked="{{materialsPublic}}" bindchange="onMaterialsPublicChange" />
+          <switch class="mini-switch" color="#2563EB" checked="{{materialsPublic}}" bindchange="onMaterialsPublicChange" />
         </view>
       </view>
 
@@ -132,7 +132,7 @@
         <text class="section-title">做法</text>
         <view class="flex-row align-center">
           <text class="toggle-label">公开</text>
-          <switch class="mini-switch" color="#2D5A43" checked="{{stepsPublic}}" bindchange="onStepsPublicChange" />
+          <switch class="mini-switch" color="#2563EB" checked="{{stepsPublic}}" bindchange="onStepsPublicChange" />
         </view>
       </view>
 

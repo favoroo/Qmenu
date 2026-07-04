@@ -33,7 +33,7 @@
 
       <!-- Chef Info Row -->
       <view class="chef-row flex-row align-center" wx:if="{{item.chefName}}">
-        <image class="chef-row-avatar" src="{{item.chefAvatar || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+        <image class="chef-row-avatar" src="{{item.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
         <text class="chef-row-label">厨师：</text>
         <text class="chef-row-name">{{item.chefName}}</text>
         <text class="chef-row-tag" wx:if="{{activeTab === 'kitchen' && item.chefId === myOpenid && item.status === 'pending'}}">待我制作</text>
@@ -65,7 +65,7 @@
       <!-- Card Summary -->
       <view class="order-summary flex-row justify-between align-center">
         <view class="share-info-tag" wx:if="{{item.isFromShare}}">
-          <icon type="success" size="12" color="#2D5A43" style="margin-right: 6rpx;"></icon>
+          <icon type="success" size="12" color="#2563EB" style="margin-right: 6rpx;"></icon>
           <text>来自好友拼单</text>
         </view>
         <view class="total-text flex-1 text-right">

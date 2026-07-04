@@ -1,7 +1,7 @@
 <view class="container">
   <view class="login-card">
     <view class="logo-area">
-      <image class="logo" src="/assets/images/logo.png" mode="aspectFit"></image>
+      <view class="title-badge">Q</view>
       <text class="title">欢迎使用 Q 菜单</text>
       <text class="subtitle">请完善您的头像与昵称，以便参与协作与拼单</text>
     </view>

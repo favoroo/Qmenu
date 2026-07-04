@@ -3,7 +3,7 @@
   <block wx:if="{{viewMode === 'list'}}">
     <!-- 空状态：无任何群组 -->
     <view wx:if="{{groupsList.length === 0}}" class="no-group-box card flex-col align-center justify-center">
-      <image class="illustration" src="/assets/images/logo.png" mode="aspectFit"></image>
+      <view class="empty-icon">👥</view>
       <view class="title">您当前不在任何群组中</view>
       <view class="desc">您可以自己创建一个菜单群组，或者输入好友的邀请码加入已有群组。</view>
       

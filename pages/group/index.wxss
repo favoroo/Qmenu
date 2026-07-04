@@ -12,11 +12,16 @@
   box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.02);
 }
 
-.illustration {
-  width: 160rpx;
-  height: 160rpx;
-  margin-bottom: 30rpx;
-  border-radius: 80rpx;
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  font-size: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28rpx;
 }
 
 .no-group-box .title {
@@ -100,7 +105,7 @@
 .group-title .name {
   font-size: 38rpx;
   font-weight: bold;
-  color: #2D5A43;
+  color: var(--primary-color);
 }
 
 .role-tag {
@@ -111,13 +116,13 @@
 }
 
 .role-tag.owner {
-  background-color: #E6F4EA;
-  color: #137333;
+  background-color: var(--primary-soft);
+  color: var(--primary-color);
 }
 
 .role-tag.member {
-  background-color: #E8F0FE;
-  color: #1A73E8;
+  background-color: #DBEAFE;
+  color: var(--primary-dark);
 }
 
 .invite-code-row {
@@ -134,19 +139,24 @@
 
 .code-val {
   font-weight: bold;
-  color: #2D5A43;
+  color: var(--primary-color);
   font-size: 32rpx;
 }
 
 .copy-btn {
   font-size: 24rpx;
-  color: #2D5A43;
-  border: 1rpx solid #2D5A43;
+  color: var(--primary-color);
+  border: 1rpx solid var(--primary-color);
   background: none;
   padding: 8rpx 20rpx;
   border-radius: 8rpx;
   margin: 0 !important;
   line-height: 1.5;
+  transition: all 0.2s ease;
+}
+
+.copy-btn:active {
+  background-color: var(--primary-tint);
 }
 
 .share-tips {
@@ -199,7 +209,7 @@
 }
 
 .identity-tag.owner {
-  color: #2D5A43;
+  color: var(--primary-color);
   font-weight: bold;
 }
 
@@ -216,6 +226,11 @@
   border-radius: 40rpx;
   padding: 20rpx 0;
   width: 100% !important;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:active {
+  transform: scale(0.97);
 }
 
 .btn-danger-outline {
@@ -226,6 +241,11 @@
   border-radius: 40rpx;
   padding: 20rpx 0;
   width: 100% !important;
+  transition: all 0.2s ease;
+}
+
+.btn-danger-outline:active {
+  transform: scale(0.97);
 }
 
 /* ===== 卡片点击态（全局 .card 已在 app.wxss 定义）===== */
@@ -246,7 +266,7 @@
 .card-name {
   font-size: 34rpx;
   font-weight: bold;
-  color: #2D5A43;
+  color: var(--primary-color);
 }
 
 .card-meta {
@@ -260,8 +280,8 @@
 
 .current-tag {
   font-size: 22rpx;
-  color: #2D5A43;
-  background-color: #E6F4EA;
+  color: var(--primary-color);
+  background-color: var(--primary-soft);
   padding: 4rpx 16rpx;
   border-radius: 20rpx;
 }
@@ -273,14 +293,14 @@
 
 .back-btn {
   font-size: 28rpx;
-  color: #2D5A43;
+  color: var(--primary-color);
   font-weight: 500;
 }
 
 /* ===== 群主管理操作按钮 ===== */
 .edit-btn {
   font-size: 26rpx;
-  color: #2D5A43;
+  color: var(--primary-color);
   margin-right: 16rpx;
 }
 
@@ -302,8 +322,8 @@
 }
 
 .action-text.transfer {
-  color: #2D5A43;
-  background-color: #E6F4EA;
+  color: var(--primary-color);
+  background-color: var(--primary-soft);
 }
 
 .action-text.remove {

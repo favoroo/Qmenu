@@ -11,6 +11,13 @@ App({
       });
     }
 
+    // 预加载本地缓存，实现首屏瞬时渲染（同步，无网络开销）
+    const lastGroupId = db.getLastGroupId();
+    if (lastGroupId) {
+      db.setCurrentGroupId(lastGroupId);
+      db.loadFromLocalCache(lastGroupId);
+    }
+
     // 将登录 promise 挂在 App 实例上，供其他页面加载时 await
     this.globalData.loginPromise = this.login();
   },
@@ -25,9 +32,6 @@ App({
         this.globalData.userInfo = userInfo;
         this.globalData.isNewUser = !!res.result.isNewUser;
         wx.setStorageSync('userInfo', userInfo);
-        
-        // 登录成功后，初始化云端默认分类和菜谱
-        await db.initCloudData();
         
         return userInfo;
       } else {

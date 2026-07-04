@@ -59,15 +59,20 @@ Page({
       myOpenid = app.globalData.userInfo.openid || '';
     }
     
-    if (currentGroupId) {
+    // 复用 kitchen 页已缓存的群组列表，避免重复调用 getGroup
+    const cachedGroups = db.getCachedGroupsList();
+    const currentGroup = cachedGroups.find(g => g._id === currentGroupId);
+    if (currentGroup) {
+      isAdmin = currentGroup.ownerId === myOpenid;
+    } else if (currentGroupId) {
+      // 仅在缓存未命中时回退到云函数调用
       try {
         const res = await wx.cloud.callFunction({
           name: 'getGroup',
           data: { groupId: currentGroupId }
         });
         if (res.result && res.result.success) {
-          const group = res.result.group;
-          isAdmin = group.ownerId === myOpenid;
+          isAdmin = res.result.group.ownerId === myOpenid;
         }
       } catch (err) {
         console.error(err);
@@ -321,7 +326,7 @@ Page({
         wx.showModal({
           title: '烹饪定时提醒',
           content: `第 ${index + 1} 步：已完成计时！`,
-          confirmColor: '#2D5A43',
+          confirmColor: '#2563EB',
           showCancel: false
         });
       } else {

@@ -98,6 +98,7 @@
   padding: 24rpx 0;
   border-radius: 50rpx;
   font-size: 32rpx;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
 }
 
 .btn-submit.disabled {
@@ -259,7 +260,7 @@
 
 .btn-step-timer {
   background-color: #ffffff;
-  border: 1rpx solid rgba(45, 90, 67, 0.2);
+  border: 1rpx solid rgba(37, 99, 235, 0.22);
   padding: 6rpx 16rpx;
   border-radius: 30rpx;
   font-size: 22rpx;
@@ -354,6 +355,6 @@
   font-size: 28rpx;
   background-color: #ffffff;
   color: var(--primary-color);
-  border: 1rpx solid rgba(45, 90, 67, 0.2);
+  border: 1rpx solid rgba(37, 99, 235, 0.22);
   font-weight: bold;
 }

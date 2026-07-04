@@ -12,12 +12,20 @@ Page({
     this.loadUserInfo();
   },
 
-  loadUserInfo() {
-    const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
+  async loadUserInfo() {
+    // 阶段1：同步读 storage，瞬时显示（冷启动 storage 同步可用）
+    const cached = wx.getStorageSync('userInfo');
+    if (cached) {
+      this.setData({ userInfo: cached });
+    }
+
+    // 阶段2：await loginPromise 拿到最新云端 userInfo
+    if (app.globalData.loginPromise) {
+      await app.globalData.loginPromise;
+    }
+    const userInfo = app.globalData.userInfo || cached;
     if (userInfo) {
-      this.setData({
-        userInfo: userInfo
-      });
+      this.setData({ userInfo });
     }
   },
 
@@ -34,9 +42,9 @@ Page({
     });
   },
 
-  goRecipeAdd() {
+  goGroupManage() {
     wx.navigateTo({
-      url: '/pages/recipe-add/index'
+      url: '/pages/group/index'
     });
   },
 
@@ -46,7 +54,7 @@ Page({
       content: '「Q 菜单」私房菜点单与分享小程序框架。\n版本：v1.0.0\n技术栈：原生微信小程序 WXML+WXSS+JS',
       showCancel: false,
       confirmText: '好哒',
-      confirmColor: '#1aa05f'
+      confirmColor: '#2563EB'
     });
   }
 });

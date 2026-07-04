@@ -26,7 +26,7 @@
 
   <!-- 当没有加入任何群组时显示空状态引导 -->
   <view wx:if="{{!currentGroup}}" class="empty-group flex-col align-center justify-center">
-    <image class="empty-group-illustration" src="/assets/images/logo.png" mode="aspectFit"></image>
+    <view class="empty-group-icon">👥</view>
     <view class="empty-group-title">您当前未加入任何群组</view>
     <view class="empty-group-desc">「Q 菜单」支持多用户协作。您可以创建自己专属的菜单群组，或者输入好友的邀请码加入已有群组。</view>
     <button class="btn-primary" bindtap="goGroupManage" style="width: 320rpx !important;">新建 / 加入群组</button>
@@ -34,6 +34,26 @@
 
   <!-- 2. Dual Column Scroll Section -->
   <view class="main-content flex-row" wx:else>
+    <!-- Skeleton Loading (首次无缓存时显示) -->
+    <block wx:if="{{loading && categories.length === 0}}">
+      <view class="skeleton-sidebar">
+        <view class="skeleton-cat-item shimmer" wx:for="{{[1,2,3]}}" wx:key="*this"></view>
+      </view>
+      <view class="skeleton-recipe-area flex-1">
+        <view class="skeleton-title shimmer"></view>
+        <view class="skeleton-recipe-card flex-row" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+          <view class="skeleton-img shimmer"></view>
+          <view class="skeleton-info flex-1">
+            <view class="skeleton-line shimmer w60"></view>
+            <view class="skeleton-line shimmer w90" style="margin-top: 16rpx"></view>
+            <view class="skeleton-line shimmer w30" style="margin-top: 16rpx"></view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- Normal Content -->
+    <block wx:else>
     <!-- Left Category Scroll -->
     <scroll-view class="category-sidebar" scroll-y scroll-with-animation>
       <view 
@@ -58,7 +78,7 @@
       <view class="category-title-header">{{activeCategoryName || '默认分类'}}</view>
       
       <view class="recipes-container" wx:if="{{filteredRecipes.length > 0}}">
-        <view class="recipe-card flex-row" wx:for="{{filteredRecipes}}" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
+        <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{filteredRecipes}}" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
           <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
           <view class="recipe-info flex-1 flex-col justify-between">
             <view>
@@ -108,10 +128,11 @@
       </view>
       <view style="height: 160rpx;"></view> <!-- Bottom spacer -->
     </scroll-view>
+    </block>
   </view>
 
   <!-- 3. Floating Random Wheel Button -->
-  <view class="floating-random-btn flex-row justify-center align-center" bindtap="openRandomModal">
+  <view class="floating-random-btn flex-col justify-center align-center" bindtap="openRandomModal">
     <text class="random-icon">🎲</text>
     <text class="random-text">吃什么</text>
   </view>
@@ -121,7 +142,7 @@
     <view class="cart-icon-wrapper flex-row align-center" bindtap="toggleCartPopup">
       <view class="cart-icon-bg flex-row justify-center align-center">
         <image class="cart-icon-img" src="/assets/tabbar/kitchen_active.png" mode="aspectFit"></image>
-        <view class="cart-badge">{{cartCount}}</view>
+        <view class="cart-badge {{badgeBump ? 'bump' : ''}}">{{cartCount}}</view>
       </view>
       <view class="cart-price-info">
         <view class="cart-total-price">

@@ -16,16 +16,16 @@
       
       <view class="menu-item flex-row justify-between align-center" bindtap="goCategoryManage">
         <view class="menu-item-left flex-row align-center">
-          <icon type="info" size="18" color="#2D5A43" style="margin-right: 20rpx;"></icon>
+          <image class="menu-item-icon" src="/assets/images/icon_category.svg"></image>
           <text>分类管理</text>
         </view>
         <view class="arrow-right"></view>
       </view>
 
-      <view class="menu-item flex-row justify-between align-center" bindtap="goRecipeAdd">
+      <view class="menu-item flex-row justify-between align-center" bindtap="goGroupManage">
         <view class="menu-item-left flex-row align-center">
-          <icon type="success" size="18" color="#2D5A43" style="margin-right: 20rpx;"></icon>
-          <text>添加菜品</text>
+          <image class="menu-item-icon" src="/assets/images/icon_group.svg"></image>
+          <text>群组管理</text>
         </view>
         <view class="arrow-right"></view>
       </view>
@@ -37,7 +37,7 @@
 
       <view class="menu-item flex-row justify-between align-center" bindtap="showAboutUs">
         <view class="menu-item-left flex-row align-center">
-          <icon type="waiting" size="18" color="#4a5568" style="margin-right: 20rpx;"></icon>
+          <image class="menu-item-icon" src="/assets/images/icon_about.svg"></image>
           <text>关于 Q 菜单</text>
         </view>
         <view class="arrow-right"></view>

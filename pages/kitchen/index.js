@@ -46,7 +46,14 @@ Page({
 
     // Move to Category Modal variables
     showMoveCategoryModal: false,
-    movingRecipe: null
+    movingRecipe: null,
+
+    // Animation gating
+    animReady: false,
+    badgeBump: false,
+
+    // Loading state
+    loading: true
   },
 
   async onLoad(options) {
@@ -81,10 +88,24 @@ Page({
   },
 
   async onShow() {
+    // 阶段1：瞬时渲染本地缓存（不 await 任何网络）
+    const lastGroupId = db.getLastGroupId();
+    if (lastGroupId) {
+      db.setCurrentGroupId(lastGroupId);
+      db.loadFromLocalCache(lastGroupId);
+      this.setData({ loading: false });
+      this.loadData(); // 同步从内存读，立即渲染
+    }
+
+    // 阶段2：await 登录 + 后台刷新云端最新数据
     await app.globalData.loginPromise;
     await this.loadGroupsList();
     // Reset cart popup
     this.setData({ showCartPopup: false });
+    
+    // Trigger stagger entrance animation
+    this.setData({ animReady: false });
+    setTimeout(() => this.setData({ animReady: true }), 50);
     
     // 检查新用户并提示完善个人信息
     this.checkNewUserPrompt();
@@ -120,15 +141,19 @@ Page({
       const res = await wx.cloud.callFunction({ name: 'getGroup' });
       if (res.result && res.result.success) {
         const groups = res.result.groups || [];
+        db.cacheGroupsList(groups); // 供 order 页复用
+
         let currentGroupId = db.getCurrentGroupId();
         
         if (!currentGroupId && groups.length > 0) {
           currentGroupId = groups[0]._id;
-          db.setCurrentGroupId(currentGroupId);
         }
 
         const currentGroup = groups.find(g => g._id === currentGroupId) || null;
         const groupIndex = groups.findIndex(g => g._id === currentGroupId);
+
+        db.setCurrentGroupId(currentGroupId);
+        db.setLastGroupId(currentGroupId); // 持久化，下次启动可预加载
 
         this.setData({
           groupsList: groups,
@@ -140,16 +165,19 @@ Page({
           await db.initCloudData(currentGroupId);
           const myOpenid = app.globalData.userInfo.openid;
           this.setData({
-            isAdmin: currentGroup && currentGroup.ownerId === myOpenid
+            isAdmin: currentGroup && currentGroup.ownerId === myOpenid,
+            loading: false
           });
         } else {
           this.setData({
-            isAdmin: false
+            isAdmin: false,
+            loading: false
           });
         }
       }
     } catch (err) {
       console.error(err);
+      this.setData({ loading: false });
     }
     this.loadData();
   },
@@ -158,13 +186,21 @@ Page({
     const index = e.detail.value;
     const selectedGroup = this.data.groupsList[index];
     if (selectedGroup) {
-      db.setCurrentGroupId(selectedGroup._id);
+      const newGroupId = selectedGroup._id;
+      db.setCurrentGroupId(newGroupId);
+      db.setLastGroupId(newGroupId); // 持久化新选择
       this.setData({
         groupIndex: index,
         currentGroup: selectedGroup
       });
+
+      // 先瞬时渲染该群组缓存
+      db.loadFromLocalCache(newGroupId);
+      this.loadData();
+
+      // 后台刷新云端
       wx.showLoading({ title: '切换中...' });
-      await db.initCloudData(selectedGroup._id);
+      await db.initCloudData(newGroupId);
       const myOpenid = app.globalData.userInfo.openid;
       this.setData({
         isAdmin: selectedGroup.ownerId === myOpenid
@@ -287,7 +323,11 @@ Page({
     this.setData({
       cart,
       cartCount: db.getCartCount(),
-      cartTotal: db.getCartTotal()
+      cartTotal: db.getCartTotal(),
+      badgeBump: false
+    }, () => {
+      this.setData({ badgeBump: true });
+      setTimeout(() => this.setData({ badgeBump: false }), 400);
     });
     
     wx.vibrateShort({ type: 'light' });
@@ -556,7 +596,7 @@ Page({
     wx.showModal({
       title: '确认移动',
       content: `将「${recipe.name}」移动到「${targetName}」？`,
-      confirmColor: '#2D5A43',
+      confirmColor: '#2563EB',
       success(modalRes) {
         if (modalRes.confirm) {
           db.updateRecipe({
@@ -613,7 +653,7 @@ Page({
     return {
       title: title,
       path: path,
-      imageUrl: '/assets/images/logo.png'
+      imageUrl: ''
     };
   },
 
@@ -695,7 +735,7 @@ Page({
         wx.showModal({
           title: '烹饪定时提醒',
           content: `第 ${index + 1} 步：已完成计时！`,
-          confirmColor: '#2D5A43',
+          confirmColor: '#2563EB',
           showCancel: false
         });
       } else {

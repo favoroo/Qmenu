@@ -34,9 +34,12 @@
             catchtouchend="onCategoryTouchEnd"
             data-category="{{item}}"
           >
-            <view class="cat-grip-bar"></view>
-            <view class="cat-grip-bar"></view>
-            <view class="cat-grip-bar"></view>
+            <view class="cat-grip-dot"></view>
+            <view class="cat-grip-dot"></view>
+            <view class="cat-grip-dot"></view>
+            <view class="cat-grip-dot"></view>
+            <view class="cat-grip-dot"></view>
+            <view class="cat-grip-dot"></view>
           </view>
           <text class="dish-cat-name">{{item.name}}</text>
           <text class="dish-count-badge">{{item.recipes.length}}道</text>
