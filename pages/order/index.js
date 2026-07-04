@@ -1,8 +1,13 @@
 const db = require('../../utils/db.js');
+const subscribe = require('../../utils/subscribe.js');
 
 Page({
   data: {
     orders: [],
+    filteredOrders: [],
+    activeTab: 'mine',        // 'mine' | 'kitchen'
+    myOpenid: '',
+    showSubscribeBanner: false,
     showDetailModal: false,
     selectedRecipe: null,
     selectedRecipeCategoryName: '',
@@ -10,6 +15,13 @@ Page({
     timerSecondsLeft: 0,
     formattedTimeLeft: '00:00',
     isAdmin: true
+  },
+
+  onLoad(options) {
+    // Support deep-link from subscription message: pages/order/index?tab=kitchen
+    if (options && options.tab === 'kitchen') {
+      this.setData({ activeTab: 'kitchen' });
+    }
   },
 
   onShow() {
@@ -38,10 +50,107 @@ Page({
     if (app.globalData.loginPromise) {
       await app.globalData.loginPromise;
     }
+    
+    const currentGroupId = db.getCurrentGroupId();
+    let isAdmin = false;
+    let myOpenid = '';
+    
+    if (app.globalData.userInfo) {
+      myOpenid = app.globalData.userInfo.openid || '';
+    }
+    
+    if (currentGroupId) {
+      try {
+        const res = await wx.cloud.callFunction({
+          name: 'getGroup',
+          data: { groupId: currentGroupId }
+        });
+        if (res.result && res.result.success) {
+          const group = res.result.group;
+          isAdmin = group.ownerId === myOpenid;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
     const orders = db.getOrders();
+    
+    // Determine subscribe banner visibility (kitchen tab, not subscribed recently)
+    const subscribedAt = wx.getStorageSync('chefNotifySubscribedAt') || 0;
+    const showBanner = this.data.activeTab === 'kitchen' && (Date.now() - subscribedAt > 7 * 24 * 3600 * 1000);
+    
     this.setData({
-      orders: orders
+      orders: orders,
+      isAdmin: isAdmin,
+      myOpenid: myOpenid,
+      showSubscribeBanner: showBanner
+    }, () => {
+      this.applyTabFilter();
     });
+  },
+
+  // Filter orders based on active tab
+  applyTabFilter() {
+    const { orders, activeTab, myOpenid } = this.data;
+    let list = orders;
+    if (activeTab === 'mine') {
+      list = orders.filter(o => (o.userOpenid || o._openid || '') === myOpenid);
+    }
+    // kitchen: show all
+    this.setData({ filteredOrders: list });
+  },
+
+  // Switch tab
+  onTabChange(e) {
+    const tab = e.currentTarget.dataset.tab;
+    const subscribedAt = wx.getStorageSync('chefNotifySubscribedAt') || 0;
+    const showBanner = tab === 'kitchen' && (Date.now() - subscribedAt > 7 * 24 * 3600 * 1000);
+    this.setData({
+      activeTab: tab,
+      showSubscribeBanner: showBanner
+    }, () => {
+      this.applyTabFilter();
+    });
+  },
+
+  // Subscribe to chef notifications (must be called synchronously from tap)
+  async onTapSubscribe() {
+    const r = await subscribe.requestChefSubscribe();
+    if (r.accepted) {
+      this.setData({ showSubscribeBanner: false });
+      wx.showToast({ title: '已开启新订单提醒', icon: 'success' });
+    } else if (r.state === 'reject' || r.state === 'ban') {
+      wx.showToast({ title: '已取消，可稍后再开启', icon: 'none' });
+    }
+  },
+
+  // Remind chef to prepare order
+  async remindChef(e) {
+    const orderId = e.currentTarget.dataset.id;
+    const order = this.data.orders.find(o => o.id === orderId);
+    if (!order || !order.chefId) {
+      wx.showToast({ title: '该订单未指定厨师', icon: 'none' });
+      return;
+    }
+    const me = getApp().globalData.userInfo;
+    if (order.chefId === me.openid) {
+      wx.showToast({ title: '这是自己制作的订单', icon: 'none' });
+      return;
+    }
+    wx.showLoading({ title: '发送提醒...' });
+    try {
+      const r = await subscribe.callNotifyChef(order);
+      wx.hideLoading();
+      if (r.sent) {
+        wx.showToast({ title: '已提醒厨师', icon: 'success' });
+      } else {
+        wx.showToast({ title: '厨师未开启提醒，请提醒TA到「厨房订单」开启', icon: 'none', duration: 2500 });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      wx.showToast({ title: '提醒失败，请重试', icon: 'none' });
+    }
   },
 
   // Mark an order as cooked/done

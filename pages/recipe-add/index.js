@@ -212,8 +212,58 @@ Page({
     this.setData({ steps });
   },
 
+  // Helper to crop image using the custom cropper page
+  cropImageHelper(src, successCallback) {
+    wx.navigateTo({
+      url: `/pages/crop-image/index?src=${encodeURIComponent(src)}`,
+      events: {
+        cropSuccess: (data) => {
+          successCallback(data.tempFilePath);
+        }
+      },
+      fail: (err) => {
+        console.error('打开裁剪页面失败', err);
+        wx.showToast({ title: '无法打开裁剪界面', icon: 'none' });
+        // Fallback to original image
+        successCallback(src);
+      }
+    });
+  },
+
+  // Image Upload/Crop Handler for Step Image
   chooseStepImage(e) {
     const index = e.currentTarget.dataset.index;
+    const self = this;
+    const steps = this.data.steps;
+    const currentStepImage = steps[index].image;
+
+    if (currentStepImage) {
+      wx.showActionSheet({
+        itemList: ['重新上传并裁剪', '裁剪当前图片', '删除步骤图'],
+        success(res) {
+          if (res.tapIndex === 0) {
+            self.selectAndCropStep(index);
+          } else if (res.tapIndex === 1) {
+            self.cropImageHelper(currentStepImage, (croppedPath) => {
+              const updatedSteps = self.data.steps;
+              updatedSteps[index].image = croppedPath;
+              self.setData({ steps: updatedSteps });
+              wx.showToast({ title: '图片已裁剪', icon: 'success' });
+            });
+          } else if (res.tapIndex === 2) {
+            const updatedSteps = self.data.steps;
+            updatedSteps[index].image = '';
+            self.setData({ steps: updatedSteps });
+            wx.showToast({ title: '图片已删除', icon: 'success' });
+          }
+        }
+      });
+    } else {
+      this.selectAndCropStep(index);
+    }
+  },
+
+  selectAndCropStep(index) {
     const self = this;
     wx.chooseMedia({
       count: 1,
@@ -221,12 +271,11 @@ Page({
       sourceType: ['album', 'camera'],
       success(res) {
         const tempFilePath = res.tempFiles[0].tempFilePath;
-        const steps = self.data.steps;
-        steps[index].image = tempFilePath;
-        self.setData({ steps });
-        wx.showToast({
-          title: '步骤图已上传',
-          icon: 'success'
+        self.cropImageHelper(tempFilePath, (croppedPath) => {
+          const updatedSteps = self.data.steps;
+          updatedSteps[index].image = croppedPath;
+          self.setData({ steps: updatedSteps });
+          wx.showToast({ title: '图片已选择并裁剪', icon: 'success' });
         });
       }
     });
@@ -260,18 +309,41 @@ Page({
   // Image Upload handler for cover
   chooseImage() {
     const self = this;
+    const { imagePath } = this.data;
+    
+    if (imagePath) {
+      wx.showActionSheet({
+        itemList: ['重新上传并裁剪', '裁剪当前图片', '删除图片'],
+        success(res) {
+          if (res.tapIndex === 0) {
+            self.selectAndCropCover();
+          } else if (res.tapIndex === 1) {
+            self.cropImageHelper(imagePath, (croppedPath) => {
+              self.setData({ imagePath: croppedPath });
+              wx.showToast({ title: '图片已裁剪', icon: 'success' });
+            });
+          } else if (res.tapIndex === 2) {
+            self.setData({ imagePath: '' });
+            wx.showToast({ title: '图片已删除', icon: 'success' });
+          }
+        }
+      });
+    } else {
+      this.selectAndCropCover();
+    }
+  },
+
+  selectAndCropCover() {
+    const self = this;
     wx.chooseMedia({
       count: 1,
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       success(res) {
         const tempFilePath = res.tempFiles[0].tempFilePath;
-        self.setData({
-          imagePath: tempFilePath
-        });
-        wx.showToast({
-          title: '图片已选择',
-          icon: 'success'
+        self.cropImageHelper(tempFilePath, (croppedPath) => {
+          self.setData({ imagePath: croppedPath });
+          wx.showToast({ title: '图片已选择并裁剪', icon: 'success' });
         });
       }
     });

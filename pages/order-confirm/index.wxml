@@ -28,7 +28,26 @@
       </view>
     </view>
 
-    <!-- 3. Remarks Area -->
+    <!-- 3. Chef Selection -->
+    <view class="chef-card card">
+      <view class="card-title">指定厨师</view>
+      <scroll-view class="chef-list" scroll-x>
+        <view
+          class="chef-item {{selectedChef && selectedChef.openid === m.openid ? 'active' : ''}}"
+          wx:for="{{members}}"
+          wx:for-item="m"
+          wx:key="openid"
+          bindtap="onSelectChef"
+          data-openid="{{m.openid}}"
+        >
+          <image class="chef-avatar" src="{{m.avatarUrl || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+          <text class="chef-name">{{m.nickName}}</text>
+        </view>
+      </scroll-view>
+      <view class="chef-hint">默认由自己制作；选择其他成员将发送订阅消息提醒对方</view>
+    </view>
+
+    <!-- 4. Remarks Area -->
     <view class="remark-card card">
       <view class="card-title">备注信息</view>
       <textarea 

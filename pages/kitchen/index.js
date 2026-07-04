@@ -1,4 +1,5 @@
 const db = require('../../utils/db.js');
+const app = getApp();
 
 let stepTimerInterval = null;
 
@@ -28,7 +29,12 @@ Page({
     randomSelectedRecipes: [],
     
     // Admin checking
-    isAdmin: true, // Set to true by default for demo and local management
+    isAdmin: false,
+
+    // Group variables
+    groupsList: [],
+    currentGroup: null,
+    groupIndex: 0,
 
     // Recipe Detail popup variables
     showDetailModal: false,
@@ -43,26 +49,135 @@ Page({
     movingRecipe: null
   },
 
-  onLoad(options) {
+  async onLoad(options) {
     // Enable share menu
     wx.showShareMenu({
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline']
     });
 
-    // Check if there is a share link
-    if (options.sharer) {
-      wx.showToast({
-        title: '正在和好友拼单中',
-        icon: 'none'
+    await app.globalData.loginPromise;
+
+    // Check if entered via invitation link
+    if (options.groupId && options.inviteCode) {
+      wx.showLoading({ title: '正在加入群组...', mask: true });
+      try {
+        const res = await wx.cloud.callFunction({
+          name: 'joinGroup',
+          data: { inviteCode: options.inviteCode }
+        });
+        if (res.result && res.result.success) {
+          db.setCurrentGroupId(options.groupId);
+          wx.showToast({ title: '已成功加入好友群组！', icon: 'success' });
+        } else {
+          wx.showToast({ title: res.result.errMsg || '加入群组失败', icon: 'none' });
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        wx.hideLoading();
+      }
+    }
+  },
+
+  async onShow() {
+    await app.globalData.loginPromise;
+    await this.loadGroupsList();
+    // Reset cart popup
+    this.setData({ showCartPopup: false });
+    
+    // 检查新用户并提示完善个人信息
+    this.checkNewUserPrompt();
+  },
+
+  checkNewUserPrompt() {
+    const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
+    const isDefaultNick = userInfo && userInfo.nickName && userInfo.nickName.startsWith('吃货_');
+    const isDefaultAvatar = userInfo && userInfo.avatarUrl && 
+      (userInfo.avatarUrl.includes('default_avatar.png') || userInfo.avatarUrl.includes('logo.png'));
+    const isNew = app.globalData.isNewUser || isDefaultNick || isDefaultAvatar;
+
+    if (isNew && !app.globalData.hasPromptedProfile) {
+      app.globalData.hasPromptedProfile = true;
+      wx.showModal({
+        title: '完善个人信息',
+        content: '为了方便在群组内协作与拼单，建议您设置微信头像和昵称。是否现在去设置？',
+        confirmText: '去设置',
+        cancelText: '暂不设置',
+        success: (res) => {
+          if (res.confirm) {
+            wx.navigateTo({
+              url: '/pages/login/index'
+            });
+          }
+        }
       });
     }
   },
 
-  onShow() {
+  async loadGroupsList() {
+    try {
+      const res = await wx.cloud.callFunction({ name: 'getGroup' });
+      if (res.result && res.result.success) {
+        const groups = res.result.groups || [];
+        let currentGroupId = db.getCurrentGroupId();
+        
+        if (!currentGroupId && groups.length > 0) {
+          currentGroupId = groups[0]._id;
+          db.setCurrentGroupId(currentGroupId);
+        }
+
+        const currentGroup = groups.find(g => g._id === currentGroupId) || null;
+        const groupIndex = groups.findIndex(g => g._id === currentGroupId);
+
+        this.setData({
+          groupsList: groups,
+          currentGroup: currentGroup,
+          groupIndex: groupIndex > -1 ? groupIndex : 0
+        });
+
+        if (currentGroupId) {
+          await db.initCloudData(currentGroupId);
+          const myOpenid = app.globalData.userInfo.openid;
+          this.setData({
+            isAdmin: currentGroup && currentGroup.ownerId === myOpenid
+          });
+        } else {
+          this.setData({
+            isAdmin: false
+          });
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
     this.loadData();
-    // Reset cart popup
-    this.setData({ showCartPopup: false });
+  },
+
+  async onGroupChange(e) {
+    const index = e.detail.value;
+    const selectedGroup = this.data.groupsList[index];
+    if (selectedGroup) {
+      db.setCurrentGroupId(selectedGroup._id);
+      this.setData({
+        groupIndex: index,
+        currentGroup: selectedGroup
+      });
+      wx.showLoading({ title: '切换中...' });
+      await db.initCloudData(selectedGroup._id);
+      const myOpenid = app.globalData.userInfo.openid;
+      this.setData({
+        isAdmin: selectedGroup.ownerId === myOpenid
+      });
+      wx.hideLoading();
+      this.loadData();
+    }
+  },
+
+  goGroupManage() {
+    wx.navigateTo({
+      url: '/pages/group/index'
+    });
   },
 
   onPullDownRefresh() {
@@ -76,7 +191,6 @@ Page({
   },
 
   async loadData() {
-    const app = getApp();
     if (app.globalData.loginPromise) {
       await app.globalData.loginPromise;
     }
@@ -477,18 +591,28 @@ Page({
 
   goToConfirmOrder() {
     if (this.data.cartCount === 0) return;
+    const currentGroupId = db.getCurrentGroupId();
     wx.navigateTo({
-      url: '/pages/order-confirm/index'
+      url: `/pages/order-confirm/index?groupId=${currentGroupId}`
     });
   },
 
   // --- Sharing Setup ---
   onShareAppMessage() {
-    // Mock user for sharing link
-    const sharerInfo = wx.getStorageSync('userInfo') || { nickName: '吃货好友' };
+    const sharerInfo = app.globalData.userInfo || wx.getStorageSync('userInfo') || { nickName: '吃货好友' };
+    const currentGroup = this.data.currentGroup;
+    
+    let path = '/pages/kitchen/index';
+    let title = `「${sharerInfo.nickName}」邀请你一起点私房菜！`;
+    
+    if (currentGroup) {
+      path = `/pages/kitchen/index?groupId=${currentGroup._id}&inviteCode=${currentGroup.inviteCode}`;
+      title = `「${sharerInfo.nickName}」邀请你加入群组「${currentGroup.name}」一起拼单！`;
+    }
+    
     return {
-      title: `「${sharerInfo.nickName}」邀请你一起点私房菜！`,
-      path: `/pages/kitchen/index?sharer=${sharerInfo.nickName}`,
+      title: title,
+      path: path,
       imageUrl: '/assets/images/logo.png'
     };
   },

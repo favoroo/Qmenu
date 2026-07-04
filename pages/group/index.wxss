@@ -1,0 +1,312 @@
+.container {
+  padding: 30rpx 24rpx;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.no-group-box {
+  background-color: #ffffff;
+  padding: 60rpx 40rpx;
+  border-radius: 24rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.02);
+}
+
+.illustration {
+  width: 160rpx;
+  height: 160rpx;
+  margin-bottom: 30rpx;
+  border-radius: 80rpx;
+}
+
+.no-group-box .title {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #334155;
+  margin-bottom: 16rpx;
+}
+
+.no-group-box .desc {
+  font-size: 26rpx;
+  color: #64748B;
+  line-height: 1.6;
+  margin-bottom: 50rpx;
+  padding: 0 20rpx;
+}
+
+.action-section {
+  width: 100%;
+}
+
+.input-row {
+  display: flex;
+  margin-bottom: 24rpx;
+}
+
+.input {
+  flex: 1;
+  background-color: #f1f5f9;
+  border-radius: 12rpx;
+  height: 80rpx;
+  padding: 0 24rpx;
+  font-size: 28rpx;
+  text-align: left;
+  color: #334155;
+}
+
+.join-btn, .create-btn {
+  width: 180rpx !important;
+  height: 80rpx;
+  font-size: 28rpx;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 16rpx !important;
+  border-radius: 12rpx;
+}
+
+.divider {
+  font-size: 24rpx;
+  color: #94A3B8;
+  margin: 30rpx 0;
+  position: relative;
+}
+
+.divider::before, .divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 35%;
+  height: 1rpx;
+  background-color: #e2e8f0;
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+/* Group Details */
+.group-header {
+  background-color: #ffffff;
+  padding: 40rpx 30rpx;
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.group-title {
+  margin-bottom: 30rpx;
+}
+
+.group-title .name {
+  font-size: 38rpx;
+  font-weight: bold;
+  color: #2D5A43;
+}
+
+.role-tag {
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-weight: 500;
+}
+
+.role-tag.owner {
+  background-color: #E6F4EA;
+  color: #137333;
+}
+
+.role-tag.member {
+  background-color: #E8F0FE;
+  color: #1A73E8;
+}
+
+.invite-code-row {
+  background-color: #F8FAFC;
+  padding: 24rpx;
+  border-radius: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.code-lbl {
+  font-size: 28rpx;
+  color: #475569;
+}
+
+.code-val {
+  font-weight: bold;
+  color: #2D5A43;
+  font-size: 32rpx;
+}
+
+.copy-btn {
+  font-size: 24rpx;
+  color: #2D5A43;
+  border: 1rpx solid #2D5A43;
+  background: none;
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  margin: 0 !important;
+  line-height: 1.5;
+}
+
+.share-tips {
+  font-size: 22rpx;
+  color: #94A3B8;
+}
+
+/* Members Section */
+.members-section {
+  background-color: #ffffff;
+  padding: 30rpx;
+  border-radius: 20rpx;
+  margin-bottom: 40rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #334155;
+  margin-bottom: 24rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #F1F5F9;
+}
+
+.member-item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #F8FAFC;
+}
+
+.member-item:last-child {
+  border-bottom: none;
+}
+
+.member-item .avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 36rpx;
+  margin-right: 20rpx;
+}
+
+.member-item .nickname {
+  font-size: 28rpx;
+  color: #334155;
+  font-weight: 500;
+}
+
+.identity-tag {
+  font-size: 22rpx;
+  color: #94A3B8;
+}
+
+.identity-tag.owner {
+  color: #2D5A43;
+  font-weight: bold;
+}
+
+/* Footer Actions */
+.action-footer {
+  margin-top: 40rpx;
+  padding: 0 20rpx;
+}
+
+.btn-danger {
+  background-color: #EF4444;
+  color: #ffffff;
+  font-size: 30rpx;
+  border-radius: 40rpx;
+  padding: 20rpx 0;
+  width: 100% !important;
+}
+
+.btn-danger-outline {
+  background: none;
+  border: 2rpx solid #EF4444;
+  color: #EF4444;
+  font-size: 30rpx;
+  border-radius: 40rpx;
+  padding: 20rpx 0;
+  width: 100% !important;
+}
+
+/* ===== 卡片点击态（全局 .card 已在 app.wxss 定义）===== */
+.card-hover {
+  background-color: #f8fafc;
+}
+
+/* ===== 群组列表 ===== */
+.group-list {
+  margin-bottom: 30rpx;
+}
+
+.group-card {
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.card-name {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #2D5A43;
+}
+
+.card-meta {
+  margin-top: 16rpx;
+}
+
+.meta-text {
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+
+.current-tag {
+  font-size: 22rpx;
+  color: #2D5A43;
+  background-color: #E6F4EA;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+/* ===== 返回按钮 ===== */
+.back-row {
+  margin-bottom: 24rpx;
+}
+
+.back-btn {
+  font-size: 28rpx;
+  color: #2D5A43;
+  font-weight: 500;
+}
+
+/* ===== 群主管理操作按钮 ===== */
+.edit-btn {
+  font-size: 26rpx;
+  color: #2D5A43;
+  margin-right: 16rpx;
+}
+
+.regen-btn {
+  font-size: 24rpx;
+  color: #EF4444;
+  margin-right: 16rpx;
+}
+
+/* ===== 成员行操作 ===== */
+.member-actions {
+  gap: 20rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+}
+
+.action-text.transfer {
+  color: #2D5A43;
+  background-color: #E6F4EA;
+}
+
+.action-text.remove {
+  color: #EF4444;
+  background-color: #FEF2F2;
+}

@@ -1,0 +1,49 @@
+<view class="cropper-container">
+  <!-- Movable Area for dragging and zooming the image -->
+  <movable-area class="movable-area" style="width: 100vw; height: 100vh;">
+    <movable-view 
+      class="movable-view"
+      direction="all"
+      scale
+      scale-min="0.5"
+      scale-max="4"
+      x="{{x}}"
+      y="{{y}}"
+      bindchange="onChange"
+      bindscale="onScale"
+      style="width: {{imgWidth}}px; height: {{imgHeight}}px;"
+      wx:if="{{src}}"
+    >
+      <image 
+        class="crop-image"
+        src="{{src}}" 
+        style="width: 100%; height: 100%;" 
+        bindload="onImageLoad"
+      ></image>
+    </movable-view>
+  </movable-area>
+
+  <!-- Overlay Mask to darken outside the crop window -->
+  <view class="mask mask-top" style="height: {{maskTop}}px;"></view>
+  <view class="mask mask-bottom" style="top: {{maskBottom}}px; height: {{maskTop}}px;"></view>
+  <view class="mask mask-left" style="top: {{maskTop}}px; height: {{cropSize}}px; width: {{maskLeft}}px;"></view>
+  <view class="mask mask-right" style="top: {{maskTop}}px; left: {{maskRight}}px; height: {{cropSize}}px; width: {{maskLeft}}px;"></view>
+
+  <!-- Crop Window Border -->
+  <view class="crop-box" style="top: {{maskTop}}px; left: {{maskLeft}}px; width: {{cropSize}}px; height: {{cropSize}}px;">
+    <!-- Corner marks for aesthetic touch -->
+    <view class="corner corner-tl"></view>
+    <view class="corner corner-tr"></view>
+    <view class="corner corner-bl"></view>
+    <view class="corner corner-br"></view>
+  </view>
+
+  <!-- Bottom Buttons -->
+  <view class="cropper-buttons flex-row justify-between">
+    <button class="btn-cancel" bindtap="onCancel">取消</button>
+    <button class="btn-confirm" bindtap="onConfirm">确定</button>
+  </view>
+
+  <!-- Hidden Canvas for cropping and exporting -->
+  <canvas type="2d" id="cropCanvas" class="crop-canvas" style="width: {{cropSize}}px; height: {{cropSize}}px;"></canvas>
+</view>

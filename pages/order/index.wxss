@@ -1,10 +1,75 @@
 .container {
   height: 100vh;
   background-color: #f7fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab Bar */
+.tab-bar {
+  background-color: #ffffff;
+  height: 88rpx;
+  border-bottom: 1rpx solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  color: var(--text-sub);
+  font-weight: 500;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.tab-item.active {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60rpx;
+  height: 6rpx;
+  border-radius: 3rpx;
+  background-color: var(--primary-color);
+}
+
+/* Subscribe Banner */
+.subscribe-banner {
+  background-color: var(--primary-light);
+  border: 1rpx solid rgba(45, 90, 67, 0.15);
+  border-radius: 16rpx;
+  padding: 16rpx 24rpx;
+  margin: 16rpx 24rpx 0 24rpx;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  font-size: 24rpx;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.btn-subscribe {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: bold;
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
+  flex-shrink: 0;
 }
 
 .order-scroll {
-  height: 100%;
+  flex: 1;
   padding: 24rpx;
   box-sizing: border-box;
 }
@@ -23,6 +88,34 @@
   border-bottom: 1rpx solid var(--border-color);
   padding-bottom: 20rpx;
   margin-bottom: 20rpx;
+}
+
+/* Order User Info Row Styles */
+.order-user-row {
+  padding: 12rpx 0;
+  margin-bottom: 16rpx;
+  border-bottom: 1rpx dashed #edf2f7;
+  display: flex;
+  align-items: center;
+}
+
+.order-user-avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  margin-right: 12rpx;
+}
+
+.order-user-name {
+  font-size: 26rpx;
+  color: var(--text-main);
+  font-weight: bold;
+}
+
+.order-user-tips {
+  font-size: 22rpx;
+  color: var(--text-light);
+  margin-left: 10rpx;
 }
 
 .order-id {
@@ -217,9 +310,67 @@
   display: none;
 }
 
+/* Remind Chef Button */
+.btn-action-remind {
+  font-size: 24rpx;
+  color: var(--primary-color);
+  background-color: var(--primary-light);
+  border: 1rpx solid var(--primary-color);
+  border-radius: 30rpx;
+  padding: 8rpx 28rpx;
+  line-height: 1.5;
+  margin: 0;
+  font-weight: bold;
+}
+
+.btn-action-remind::after {
+  display: none;
+}
+
+/* Chef Info Row */
+.chef-row {
+  padding: 12rpx 0;
+  margin-bottom: 16rpx;
+  border-bottom: 1rpx dashed #edf2f7;
+}
+
+.chef-row-avatar {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 20rpx;
+  margin-right: 10rpx;
+}
+
+.chef-row-label {
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+.chef-row-name {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+.chef-row-tag {
+  font-size: 20rpx;
+  color: #ffffff;
+  background-color: var(--primary-color);
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
+  margin-left: 12rpx;
+  font-weight: bold;
+}
+
+/* Highlight for orders assigned to me (kitchen tab) */
+.order-card.mine-to-cook {
+  border-left: 6rpx solid var(--primary-color);
+  background-color: #fcfdfb;
+}
+
 /* Empty Orders view */
 .empty-orders {
-  height: 80vh;
+  flex: 1;
   padding: 40rpx;
   text-align: center;
 }

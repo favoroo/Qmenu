@@ -32,7 +32,7 @@ exports.main = async (event, context) => {
       const defaultUser = {
         openid: openid,
         nickName: '吃货_' + openid.substring(openid.length - 4),
-        avatarUrl: '/assets/images/logo.png', // 默认头像
+        avatarUrl: '/assets/images/default_avatar.png', // 默认头像
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
       }
@@ -43,7 +43,8 @@ exports.main = async (event, context) => {
       return {
         success: true,
         openid: openid,
-        userInfo: defaultUser
+        userInfo: defaultUser,
+        isNewUser: true
       }
     }
   } catch (err) {

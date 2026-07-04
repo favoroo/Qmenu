@@ -1,7 +1,7 @@
 <view class="container">
   <!-- 1. Profile Header Box -->
   <view class="profile-header flex-col align-center justify-center" bindtap="goToEditProfile">
-    <image class="profile-avatar" src="{{userInfo.avatarUrl || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+    <image class="profile-avatar" src="{{userInfo.avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
     <view class="profile-nickname flex-row align-center">
       <text>{{userInfo.nickName}}</text>
       <text class="edit-icon">✎</text>

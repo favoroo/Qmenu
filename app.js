@@ -23,6 +23,7 @@ App({
       if (res.result && res.result.success) {
         const userInfo = res.result.userInfo;
         this.globalData.userInfo = userInfo;
+        this.globalData.isNewUser = !!res.result.isNewUser;
         wx.setStorageSync('userInfo', userInfo);
         
         // 登录成功后，初始化云端默认分类和菜谱
@@ -45,6 +46,8 @@ App({
 
   globalData: {
     userInfo: null,
-    loginPromise: null
+    loginPromise: null,
+    isNewUser: false,
+    hasPromptedProfile: false
   }
 });

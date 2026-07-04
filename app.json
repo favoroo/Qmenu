@@ -4,9 +4,11 @@
     "pages/order/index",
     "pages/my/index",
     "pages/recipe-add/index",
+    "pages/crop-image/index",
     "pages/category-manage/index",
     "pages/order-confirm/index",
-    "pages/login/index"
+    "pages/login/index",
+    "pages/group/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

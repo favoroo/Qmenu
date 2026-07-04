@@ -1,0 +1,132 @@
+.cropper-container {
+  width: 100vw;
+  height: 100vh;
+  background-color: #000000;
+  position: relative;
+  overflow: hidden;
+}
+
+.movable-area {
+  background-color: #000000;
+}
+
+.movable-view {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Semi-transparent Mask */
+.mask {
+  position: absolute;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.mask-top {
+  top: 0;
+  width: 100%;
+}
+
+.mask-bottom {
+  width: 100%;
+}
+
+.mask-left {
+  left: 0;
+}
+
+.mask-right {
+  right: 0;
+}
+
+/* Crop Box Outline */
+.crop-box {
+  position: absolute;
+  border: 2rpx solid #ffffff;
+  box-shadow: 0 0 0 9999rpx rgba(0, 0, 0, 0); /* Fallback */
+  z-index: 11;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* Crop Frame Corners */
+.corner {
+  position: absolute;
+  width: 30rpx;
+  height: 30rpx;
+  border-color: #ffffff;
+  border-style: solid;
+  z-index: 12;
+}
+
+.corner-tl {
+  top: -4rpx;
+  left: -4rpx;
+  border-width: 6rpx 0 0 6rpx;
+}
+
+.corner-tr {
+  top: -4rpx;
+  right: -4rpx;
+  border-width: 6rpx 6rpx 0 0;
+}
+
+.corner-bl {
+  bottom: -4rpx;
+  left: -4rpx;
+  border-width: 0 0 6rpx 6rpx;
+}
+
+.corner-br {
+  bottom: -4rpx;
+  right: -4rpx;
+  border-width: 0 6rpx 6rpx 0;
+}
+
+/* Buttons */
+.cropper-buttons {
+  position: absolute;
+  bottom: 60rpx;
+  left: 0;
+  width: 100%;
+  padding: 0 50rpx;
+  z-index: 20;
+  box-sizing: border-box;
+}
+
+.btn-cancel, .btn-confirm {
+  width: 260rpx !important;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 44rpx;
+  font-size: 30rpx;
+  font-weight: bold;
+  text-align: center;
+  border: none;
+  margin: 0 !important;
+}
+
+.btn-cancel {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.btn-confirm {
+  background-color: #2D5A43;
+  color: #ffffff;
+}
+
+.btn-cancel:active, .btn-confirm:active {
+  opacity: 0.8;
+}
+
+/* Hidden canvas for drawing crop output */
+.crop-canvas {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  visibility: hidden;
+}

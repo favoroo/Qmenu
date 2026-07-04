@@ -1,0 +1,102 @@
+<view class="container">
+  <!-- ===== 列表视图 ===== -->
+  <block wx:if="{{viewMode === 'list'}}">
+    <!-- 空状态：无任何群组 -->
+    <view wx:if="{{groupsList.length === 0}}" class="no-group-box card flex-col align-center justify-center">
+      <image class="illustration" src="/assets/images/logo.png" mode="aspectFit"></image>
+      <view class="title">您当前不在任何群组中</view>
+      <view class="desc">您可以自己创建一个菜单群组，或者输入好友的邀请码加入已有群组。</view>
+      
+      <view class="action-section">
+        <view class="input-row">
+          <input class="input" placeholder="输入6位永久邀请码" value="{{inviteCode}}" bindinput="onInputInviteCode"/>
+          <button class="btn-primary join-btn" bindtap="onJoinGroup">加入群组</button>
+        </view>
+        <view class="divider">或者</view>
+        <view class="input-row">
+          <input class="input" placeholder="输入新群组名称" value="{{newGroupName}}" bindinput="onInputGroupName"/>
+          <button class="btn-secondary create-btn" bindtap="onCreateGroup">新建群组</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 有群组：列表 + 紧凑创建/加入区 -->
+    <block wx:else>
+      <view class="group-list">
+        <view class="group-card card" wx:for="{{groupsList}}" wx:key="_id" data-id="{{item._id}}" bindtap="onTapGroupItem" hover-class="card-hover">
+          <view class="flex-row align-center justify-between">
+            <text class="card-name">{{item.name}}</text>
+            <text class="role-tag {{item.ownerId === myOpenid ? 'owner' : 'member'}}">{{item.ownerId === myOpenid ? '群主' : '协作者'}}</text>
+          </view>
+          <view class="card-meta flex-row align-center justify-between">
+            <text class="meta-text">{{item.members.length}}/20 成员</text>
+            <text class="current-tag" wx:if="{{item._id === currentGroupId}}">当前群组</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="action-section card">
+        <view class="section-title">新建 / 加入群组</view>
+        <view class="input-row">
+          <input class="input" placeholder="输入6位邀请码" value="{{inviteCode}}" bindinput="onInputInviteCode"/>
+          <button class="btn-primary join-btn" bindtap="onJoinGroup">加入</button>
+        </view>
+        <view class="input-row">
+          <input class="input" placeholder="输入新群组名称" value="{{newGroupName}}" bindinput="onInputGroupName"/>
+          <button class="btn-secondary create-btn" bindtap="onCreateGroup">新建</button>
+        </view>
+      </view>
+    </block>
+  </block>
+
+  <!-- ===== 详情管理视图 ===== -->
+  <view wx:else class="group-info-box">
+    <view class="back-row">
+      <text class="back-btn" bindtap="backToList">‹ 返回群组列表</text>
+    </view>
+
+    <!-- 群名和邀请码卡片 -->
+    <view class="group-header card">
+      <view class="group-title flex-row align-center justify-between">
+        <text class="name">{{group.name}}</text>
+        <view class="flex-row align-center">
+          <text class="edit-btn" wx:if="{{isOwner}}" bindtap="onEditGroupName">编辑</text>
+          <text class="role-tag owner" wx:if="{{isOwner}}">群主</text>
+          <text class="role-tag member" wx:else>协作者</text>
+        </view>
+      </view>
+      <view class="invite-code-row flex-row align-center justify-between">
+        <view class="code-lbl">邀请码：<text class="code-val">{{group.inviteCode}}</text></view>
+        <view class="flex-row align-center">
+          <text class="regen-btn" wx:if="{{isOwner}}" bindtap="onRegenerateInviteCode">重新生成</text>
+          <button class="copy-btn" bindtap="copyInviteCode">复制</button>
+        </view>
+      </view>
+      <view class="share-tips">分享此邀请码给好友，好友加入后即可共同编辑菜单与拼单。</view>
+    </view>
+
+    <!-- 成员列表 -->
+    <view class="members-section card">
+      <view class="section-title">群组成员 ({{group.members.length}}/20)</view>
+      <view class="member-list">
+        <view class="member-item flex-row align-center justify-between" wx:for="{{group.members}}" wx:key="openid">
+          <view class="member-left flex-row align-center">
+            <image class="avatar" src="{{item.avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+            <text class="nickname">{{item.nickName}}</text>
+          </view>
+          <view class="member-actions flex-row align-center" wx:if="{{isOwner && item.openid !== myOpenid}}">
+            <text class="action-text transfer" data-openid="{{item.openid}}" data-name="{{item.nickName}}" bindtap="onTransferOwner">转让群主</text>
+            <text class="action-text remove" data-openid="{{item.openid}}" data-name="{{item.nickName}}" bindtap="onRemoveMember">移除</text>
+          </view>
+          <text class="identity-tag {{item.role}}" wx:else>{{item.role === 'owner' ? '群主' : '成员'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部操作按钮 -->
+    <view class="action-footer">
+      <button wx:if="{{isOwner}}" class="btn-danger" bindtap="onDisbandGroup">解散群组</button>
+      <button wx:else class="btn-danger-outline" bindtap="onLeaveGroup">退出群组</button>
+    </view>
+  </view>
+</view>

@@ -10,7 +10,7 @@
       <view class="form-item avatar-picker-item">
         <text class="label">头像</text>
         <button class="avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-          <image class="avatar" src="{{avatarUrl || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+          <image class="avatar" src="{{avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
         </button>
       </view>
 

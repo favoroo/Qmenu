@@ -8,6 +8,8 @@ let cloudCache = {
   cart: {}
 };
 
+let currentGroupId = '';
+
 const DEFAULT_CATEGORIES = [
   { id: 'cat_default', name: '默认分类', sort: 1 },
   { id: 'cat_signature', name: '招牌私房菜', sort: 2 },
@@ -105,37 +107,59 @@ const DEFAULT_RECIPES = [
 
 const db = {
   // 从云端加载所有数据并缓存
-  async initCloudData() {
+  setCurrentGroupId(groupId) {
+    currentGroupId = groupId;
+  },
+
+  getCurrentGroupId() {
+    return currentGroupId;
+  },
+
+  // 从云端加载所有数据并缓存 (支持 groupId 隔离)
+  async initCloudData(groupId) {
+    if (groupId) {
+      currentGroupId = groupId;
+    }
+
+    if (!currentGroupId) {
+      cloudCache.categories = [];
+      cloudCache.recipes = [];
+      cloudCache.orders = [];
+      cloudCache.cart = {};
+      return;
+    }
+
     try {
       const dbInstance = wx.cloud.database();
       
-      // 1. 获取分类
-      let catRes = await dbInstance.collection('categories').get();
+      // 1. 获取该群组的分类
+      let catRes = await dbInstance.collection('categories').where({ groupId: currentGroupId }).get();
       let categories = catRes.data;
       if (categories.length === 0) {
         for (let cat of DEFAULT_CATEGORIES) {
           const res = await dbInstance.collection('categories').add({
             data: {
               id: cat.id,
+              groupId: currentGroupId,
               name: cat.name,
               sort: cat.sort
             }
           });
           cat._id = res.id;
         }
-        categories = DEFAULT_CATEGORIES;
+        categories = DEFAULT_CATEGORIES.map(c => ({ ...c, groupId: currentGroupId }));
       }
       cloudCache.categories = categories;
 
-      // 2. 获取菜谱
-      let recRes = await dbInstance.collection('recipes').get();
+      // 2. 获取该群组的菜谱
+      let recRes = await dbInstance.collection('recipes').where({ groupId: currentGroupId }).get();
       let recipes = recRes.data;
       if (recipes.length === 0) {
         for (let rec of DEFAULT_RECIPES) {
           const res = await dbInstance.collection('recipes').add({
             data: {
               id: rec.id,
-              name: rec.name,
+              groupId: currentGroupId,
               categoryId: rec.categoryId,
               price: rec.price,
               image: rec.image,
@@ -145,36 +169,39 @@ const db = {
               materials: rec.materials,
               materialsPublic: rec.materialsPublic,
               steps: rec.steps,
-              stepsPublic: rec.stepsPublic
+              stepsPublic: rec.stepsPublic,
+              creatorId: 'system',
+              creatorName: '系统'
             }
           });
           rec._id = res.id;
         }
-        recipes = DEFAULT_RECIPES;
+        recipes = DEFAULT_RECIPES.map(r => ({ ...r, groupId: currentGroupId, creatorId: 'system', creatorName: '系统' }));
       }
       cloudCache.recipes = recipes;
 
-      // 3. 获取订单
-      let ordRes = await dbInstance.collection('orders').orderBy('createTime', 'desc').get();
+      // 3. 获取该群组的订单
+      let ordRes = await dbInstance.collection('orders')
+        .where({ groupId: currentGroupId })
+        .orderBy('createTime', 'desc')
+        .get();
       cloudCache.orders = ordRes.data;
 
-      // 4. 获取购物车
-      let cartRes = await dbInstance.collection('cart').limit(1).get();
+      // 4. 获取当前用户在该群组的购物车
+      let cartRes = await dbInstance.collection('cart').where({ groupId: currentGroupId }).limit(1).get();
       if (cartRes.data.length > 0) {
         cloudCache.cart = cartRes.data[0].items || {};
       } else {
         cloudCache.cart = {};
         await dbInstance.collection('cart').add({
-          data: { items: {} }
+          data: {
+            groupId: currentGroupId,
+            items: {}
+          }
         });
       }
     } catch (err) {
       console.error('初始化云端数据失败', err);
-      // 如果出错，尝试从本地缓存读取做降级
-      cloudCache.categories = wx.getStorageSync('DB_CATEGORIES') || DEFAULT_CATEGORIES;
-      cloudCache.recipes = wx.getStorageSync('DB_RECIPES') || DEFAULT_RECIPES;
-      cloudCache.orders = wx.getStorageSync('DB_ORDERS') || [];
-      cloudCache.cart = wx.getStorageSync('DB_CART') || {};
     }
   },
 
@@ -196,9 +223,11 @@ const db = {
   },
 
   addCategory(name, sort = 10) {
+    if (!currentGroupId) return null;
     const list = this.getCategories();
     const newCat = {
       id: 'cat_' + Date.now() + Math.random().toString(36).substr(2, 5),
+      groupId: currentGroupId,
       name,
       sort: parseInt(sort) || 10
     };
@@ -249,9 +278,12 @@ const db = {
   },
 
   addRecipe(recipe) {
+    if (!currentGroupId) return null;
     const list = this.getRecipes();
+    const userInfo = wx.getStorageSync('userInfo') || {};
     const newRecipe = {
       id: 'rec_' + Date.now() + Math.random().toString(36).substr(2, 5),
+      groupId: currentGroupId,
       name: recipe.name,
       categoryId: recipe.categoryId || 'cat_default',
       price: parseFloat(recipe.price) || 0,
@@ -262,7 +294,9 @@ const db = {
       materials: recipe.materials || [],
       materialsPublic: recipe.materialsPublic !== false,
       steps: recipe.steps || [],
-      stepsPublic: recipe.stepsPublic !== false
+      stepsPublic: recipe.stepsPublic !== false,
+      creatorId: userInfo.openid || 'unknown',
+      creatorName: userInfo.nickName || '匿名用户'
     };
     list.push(newRecipe);
 
@@ -325,9 +359,10 @@ const db = {
   },
 
   saveCart(cart) {
+    if (!currentGroupId) return;
     cloudCache.cart = cart;
     const dbInstance = wx.cloud.database();
-    dbInstance.collection('cart').get().then(res => {
+    dbInstance.collection('cart').where({ groupId: currentGroupId }).get().then(res => {
       if (res.data.length > 0) {
         dbInstance.collection('cart').doc(res.data[0]._id).update({
           data: { items: cart }
@@ -421,7 +456,8 @@ const db = {
     cloudCache.orders = orders.filter(o => o.id !== orderId);
   },
 
-  createOrder(remark = '', isFromShare = false, sharerId = '') {
+  createOrder(remark = '', isFromShare = false, sharerId = '', chef = null) {
+    if (!currentGroupId) return null;
     const cart = this.getCart();
     const items = Object.values(cart);
     if (items.length === 0) return null;
@@ -430,8 +466,13 @@ const db = {
     const orderId = 'ORD' + Date.now() + Math.floor(Math.random() * 900 + 100);
     const userInfo = wx.getStorageSync('userInfo') || { nickName: '吃货', avatarUrl: '/assets/images/logo.png' };
 
+    const chefId = chef ? chef.openid : '';
+    const chefName = chef ? chef.nickName : '';
+    const chefAvatar = chef ? chef.avatarUrl : '';
+
     const newOrder = {
       id: orderId,
+      groupId: currentGroupId,
       createTime: this.formatTime(new Date()),
       items: items.map(item => ({
         recipeId: item.recipe.id,
@@ -446,7 +487,11 @@ const db = {
       isFromShare: isFromShare,
       sharerId: sharerId,
       userName: userInfo.nickName,
-      userAvatar: userInfo.avatarUrl
+      userAvatar: userInfo.avatarUrl,
+      userOpenid: userInfo.openid || '',
+      chefId: chefId,
+      chefName: chefName,
+      chefAvatar: chefAvatar
     };
 
     orders.unshift(newOrder);

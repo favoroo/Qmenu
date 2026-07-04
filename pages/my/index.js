@@ -4,7 +4,7 @@ Page({
   data: {
     userInfo: {
       nickName: '饕餮吃货',
-      avatarUrl: '/assets/images/logo.png'
+      avatarUrl: '/assets/images/default_avatar.png'
     }
   },
 

@@ -1,4 +1,17 @@
 <view class="container">
+  <!-- Group Selector Header -->
+  <view class="group-bar flex-row align-center justify-between">
+    <picker bindchange="onGroupChange" value="{{groupIndex}}" range="{{groupsList}}" range-key="name" class="group-picker-wrapper">
+      <view class="group-picker flex-row align-center">
+        <text class="group-name">{{currentGroup.name || '未加入群组'}}</text>
+        <text class="arrow-down">▼</text>
+      </view>
+    </picker>
+    <view class="group-actions flex-row align-center">
+      <view class="group-manage-btn" bindtap="goGroupManage">管理群组</view>
+    </view>
+  </view>
+
   <!-- 1. Header Section -->
   <view class="header-section">
     <!-- Search Bar -->
@@ -11,8 +24,16 @@
     </view>
   </view>
 
+  <!-- 当没有加入任何群组时显示空状态引导 -->
+  <view wx:if="{{!currentGroup}}" class="empty-group flex-col align-center justify-center">
+    <image class="empty-group-illustration" src="/assets/images/logo.png" mode="aspectFit"></image>
+    <view class="empty-group-title">您当前未加入任何群组</view>
+    <view class="empty-group-desc">「Q 菜单」支持多用户协作。您可以创建自己专属的菜单群组，或者输入好友的邀请码加入已有群组。</view>
+    <button class="btn-primary" bindtap="goGroupManage" style="width: 320rpx !important;">新建 / 加入群组</button>
+  </view>
+
   <!-- 2. Dual Column Scroll Section -->
-  <view class="main-content flex-row">
+  <view class="main-content flex-row" wx:else>
     <!-- Left Category Scroll -->
     <scroll-view class="category-sidebar" scroll-y scroll-with-animation>
       <view 
@@ -41,8 +62,9 @@
           <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
           <view class="recipe-info flex-1 flex-col justify-between">
             <view>
-              <view class="recipe-name flex-row align-center">
+              <view class="recipe-name flex-row align-center justify-between">
                 <text>{{item.name}}</text>
+                <text class="recipe-creator" wx:if="{{item.creatorName}}">By {{item.creatorName}}</text>
               </view>
               <view class="recipe-desc text-ellipsis-2">{{item.desc || '主人很懒，还没写这道菜的描述~'}}</view>
             </view>

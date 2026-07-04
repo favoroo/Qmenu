@@ -42,13 +42,42 @@ function isManagedLocalFile(p) {
 // 压缩图片
 function compress(tempFilePath) {
   return new Promise(resolve => {
-    wx.compressImage({
+    wx.getImageInfo({
       src: tempFilePath,
-      quality: CONFIG.compress.quality,
-      compressedWidth: CONFIG.compress.maxWidth,
-      compressedHeight: CONFIG.compress.maxHeight,
-      success: res => resolve(res.tempFilePath),
-      fail: () => resolve(tempFilePath)
+      success: info => {
+        let { width, height } = info;
+        const maxSize = CONFIG.compress.maxWidth || 1080;
+        let targetWidth = width;
+        let targetHeight = height;
+        
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            targetHeight = Math.round((height * maxSize) / width);
+            targetWidth = maxSize;
+          } else {
+            targetWidth = Math.round((width * maxSize) / height);
+            targetHeight = maxSize;
+          }
+        }
+        
+        wx.compressImage({
+          src: tempFilePath,
+          quality: CONFIG.compress.quality,
+          compressedWidth: targetWidth,
+          compressedHeight: targetHeight,
+          success: res => resolve(res.tempFilePath),
+          fail: () => resolve(tempFilePath)
+        });
+      },
+      fail: () => {
+        // Fallback: compress quality only without resizing if getImageInfo fails
+        wx.compressImage({
+          src: tempFilePath,
+          quality: CONFIG.compress.quality,
+          success: res => resolve(res.tempFilePath),
+          fail: () => resolve(tempFilePath)
+        });
+      }
     });
   });
 }

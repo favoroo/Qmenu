@@ -1,21 +1,27 @@
 const db = require('../../utils/db.js');
+const subscribe = require('../../utils/subscribe.js');
 
 Page({
   data: {
     cartItems: [],
     cartTotal: 0,
     remark: '',
-    
+
     // Sharing拼单 variables
     isFromShare: false,
     sharerName: '',
-    
+
+    // Chef selection
+    members: [],
+    selectedChef: null,
+
     isSubmitting: false
   },
 
   onLoad(options) {
     this.loadCart();
-    
+    this.loadMembers();
+
     // Check if entered via share link
     if (options.sharer) {
       this.setData({
@@ -40,6 +46,39 @@ Page({
     });
   },
 
+  async loadMembers() {
+    const app = getApp();
+    if (app.globalData.loginPromise) {
+      await app.globalData.loginPromise;
+    }
+    const groupId = db.getCurrentGroupId();
+    if (!groupId) return;
+
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'getGroup',
+        data: { groupId: groupId }
+      });
+      if (res.result && res.result.success) {
+        const members = (res.result.group.members) || [];
+        const me = app.globalData.userInfo;
+        // 默认选中自己（自做）
+        const defaultChef = members.find(m => m.openid === me.openid) || null;
+        this.setData({ members, selectedChef: defaultChef });
+      }
+    } catch (err) {
+      console.error('加载群成员失败', err);
+    }
+  },
+
+  onSelectChef(e) {
+    const openid = e.currentTarget.dataset.openid;
+    const member = this.data.members.find(m => m.openid === openid);
+    if (member) {
+      this.setData({ selectedChef: member });
+    }
+  },
+
   onRemarkInput(e) {
     this.setData({
       remark: e.detail.value
@@ -47,9 +86,9 @@ Page({
   },
 
   // Place Order handler
-  handlePlaceOrder() {
-    const { remark, isFromShare, sharerName, isSubmitting, cartItems } = this.data;
-    
+  async handlePlaceOrder() {
+    const { remark, isFromShare, sharerName, isSubmitting, cartItems, selectedChef } = this.data;
+
     if (isSubmitting) return;
     if (cartItems.length === 0) {
       wx.showToast({
@@ -61,15 +100,33 @@ Page({
 
     this.setData({ isSubmitting: true });
 
-    // Call DB helper to write mock order
-    const order = db.createOrder(remark, isFromShare, sharerName);
+    const chef = selectedChef || null;
+    // Call DB helper to write order
+    const order = db.createOrder(remark, isFromShare, sharerName, chef);
 
     if (order) {
-      wx.showToast({
-        title: '下单成功！正在制作',
-        icon: 'success',
-        duration: 1500
-      });
+      const app = getApp();
+      const me = app.globalData.userInfo;
+      const needNotify = chef && chef.openid && chef.openid !== me.openid;
+
+      if (needNotify) {
+        try {
+          const r = await subscribe.callNotifyChef(order);
+          if (r.sent) {
+            wx.showToast({ title: '下单成功，已通知厨师', icon: 'success', duration: 1500 });
+          } else {
+            wx.showToast({ title: '已下单，厨师未开启提醒', icon: 'none', duration: 2000 });
+          }
+        } catch (e) {
+          wx.showToast({ title: '已下单，通知发送失败', icon: 'none' });
+        }
+      } else {
+        wx.showToast({
+          title: '下单成功！正在制作',
+          icon: 'success',
+          duration: 1500
+        });
+      }
 
       wx.vibrateLong();
 

@@ -1,6 +1,18 @@
 <view class="container">
-  <scroll-view class="order-scroll" scroll-y wx:if="{{orders.length > 0}}">
-    <view class="order-card card" wx:for="{{orders}}" wx:key="id">
+  <!-- Tab Bar -->
+  <view class="tab-bar flex-row">
+    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine">我的订单</view>
+    <view class="tab-item {{activeTab === 'kitchen' ? 'active' : ''}}" bindtap="onTabChange" data-tab="kitchen">厨房订单</view>
+  </view>
+
+  <!-- Subscribe Banner (kitchen tab only) -->
+  <view class="subscribe-banner flex-row align-center" wx:if="{{activeTab === 'kitchen' && showSubscribeBanner}}">
+    <text class="banner-text flex-1">开启新订单提醒，及时收到制作任务</text>
+    <view class="btn-subscribe" catchtap="onTapSubscribe">开启提醒</view>
+  </view>
+
+  <scroll-view class="order-scroll" scroll-y wx:if="{{filteredOrders.length > 0}}">
+    <view class="order-card card {{activeTab === 'kitchen' && item.chefId === myOpenid && item.status === 'pending' ? 'mine-to-cook' : ''}}" wx:for="{{filteredOrders}}" wx:key="id">
       <!-- Card Header -->
       <view class="order-header flex-row justify-between align-center">
         <view class="order-meta">
@@ -10,6 +22,21 @@
         <view class="order-status-badge {{item.status === 'pending' ? 'pending' : 'done'}}">
           {{item.status === 'pending' ? '制作中' : '制作完成'}}
         </view>
+      </view>
+
+      <!-- User Info Row -->
+      <view class="order-user-row flex-row align-center">
+        <image class="order-user-avatar" src="{{item.userAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+        <text class="order-user-name">{{item.userName || '吃货好友'}}</text>
+        <text class="order-user-tips">发起下单</text>
+      </view>
+
+      <!-- Chef Info Row -->
+      <view class="chef-row flex-row align-center" wx:if="{{item.chefName}}">
+        <image class="chef-row-avatar" src="{{item.chefAvatar || '/assets/images/logo.png'}}" mode="aspectFill"></image>
+        <text class="chef-row-label">厨师：</text>
+        <text class="chef-row-name">{{item.chefName}}</text>
+        <text class="chef-row-tag" wx:if="{{activeTab === 'kitchen' && item.chefId === myOpenid && item.status === 'pending'}}">待我制作</text>
       </view>
 
       <!-- Card Body (Items) -->
@@ -48,31 +75,55 @@
 
       <!-- Card Actions -->
       <view class="order-actions flex-row justify-end">
-        <button 
-          class="btn-action-delete" 
-          bindtap="deleteOrder" 
-          data-id="{{item.id}}"
-        >
-          删除订单
-        </button>
-        
-        <button 
-          class="btn-action-complete" 
-          wx:if="{{item.status === 'pending'}}" 
-          bindtap="completeOrder" 
-          data-id="{{item.id}}"
-        >
-          完成制作
-        </button>
-        
-        <button 
-          class="btn-action-reorder" 
-          wx:else 
-          bindtap="reorder" 
-          data-id="{{item.id}}"
-        >
-          再来一单
-        </button>
+        <!-- 我的订单 Tab: 删除 + 提醒厨师/再来一单 -->
+        <block wx:if="{{activeTab === 'mine'}}">
+          <button 
+            class="btn-action-delete" 
+            bindtap="deleteOrder" 
+            data-id="{{item.id}}"
+          >
+            删除订单
+          </button>
+
+          <button 
+            class="btn-action-remind" 
+            wx:if="{{item.status === 'pending' && item.chefId}}" 
+            bindtap="remindChef" 
+            data-id="{{item.id}}"
+          >
+            提醒厨师
+          </button>
+
+          <button 
+            class="btn-action-reorder" 
+            wx:elif="{{item.status === 'done'}}" 
+            bindtap="reorder" 
+            data-id="{{item.id}}"
+          >
+            再来一单
+          </button>
+        </block>
+
+        <!-- 厨房订单 Tab: 完成制作/再来一单 -->
+        <block wx:else>
+          <button 
+            class="btn-action-complete" 
+            wx:if="{{item.status === 'pending'}}" 
+            bindtap="completeOrder" 
+            data-id="{{item.id}}"
+          >
+            完成制作
+          </button>
+
+          <button 
+            class="btn-action-reorder" 
+            wx:else 
+            bindtap="reorder" 
+            data-id="{{item.id}}"
+          >
+            再来一单
+          </button>
+        </block>
       </view>
     </view>
     <view style="height: 40rpx;"></view> <!-- Bottom spacing -->
@@ -81,9 +132,9 @@
   <!-- Empty State -->
   <view class="empty-orders flex-col align-center justify-center" wx:else>
     <icon type="warn" size="64" color="#cbd5e0" style="margin-bottom: 30rpx;"></icon>
-    <view class="empty-title">暂无订单记录</view>
-    <view class="empty-subtitle">快去厨房挑选心仪的美味吧！</view>
-    <button class="btn-primary margin-top-lg" bindtap="goToKitchen">去厨房逛逛</button>
+    <view class="empty-title">{{activeTab === 'mine' ? '暂无我的订单' : '厨房暂无订单'}}</view>
+    <view class="empty-subtitle">{{activeTab === 'mine' ? '快去厨房挑选心仪的美味吧！' : '等待群友下单后这里会显示订单'}}</view>
+    <button class="btn-primary margin-top-lg" bindtap="goToKitchen" wx:if="{{activeTab === 'mine'}}">去厨房逛逛</button>
   </view>
 
   <!-- Recipe Detail Modal (Overlay & Sheet) -->

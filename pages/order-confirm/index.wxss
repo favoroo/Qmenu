@@ -149,3 +149,65 @@
   background: #cbd5e0 !important;
   box-shadow: none !important;
 }
+
+/* Chef Selection Card */
+.chef-card {
+  margin-bottom: 24rpx;
+}
+
+.chef-list {
+  white-space: nowrap;
+  padding: 8rpx 0 20rpx 0;
+}
+
+.chef-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 24rpx;
+  padding: 12rpx 16rpx;
+  border-radius: 16rpx;
+  border: 2rpx solid var(--border-color);
+  background-color: var(--bg-light);
+  transition: all 0.2s ease;
+  min-width: 120rpx;
+}
+
+.chef-item.active {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+  box-shadow: 0 4rpx 12rpx rgba(45, 90, 67, 0.1);
+}
+
+.chef-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  margin-bottom: 10rpx;
+  background-color: #e2e8f0;
+}
+
+.chef-item.active .chef-avatar {
+  border: 3rpx solid var(--primary-color);
+}
+
+.chef-name {
+  font-size: 22rpx;
+  color: var(--text-sub);
+  max-width: 140rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chef-item.active .chef-name {
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.chef-hint {
+  font-size: 22rpx;
+  color: var(--text-light);
+  margin-top: 8rpx;
+  line-height: 1.4;
+}
