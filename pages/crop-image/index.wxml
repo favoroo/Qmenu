@@ -25,12 +25,12 @@
 
   <!-- Overlay Mask to darken outside the crop window -->
   <view class="mask mask-top" style="height: {{maskTop}}px;"></view>
-  <view class="mask mask-bottom" style="top: {{maskBottom}}px; height: {{maskTop}}px;"></view>
-  <view class="mask mask-left" style="top: {{maskTop}}px; height: {{cropSize}}px; width: {{maskLeft}}px;"></view>
-  <view class="mask mask-right" style="top: {{maskTop}}px; left: {{maskRight}}px; height: {{cropSize}}px; width: {{maskLeft}}px;"></view>
+  <view class="mask mask-bottom" style="top: {{maskBottom}}px; height: {{maskBottomHeight}}px;"></view>
+  <view class="mask mask-left" style="top: {{maskTop}}px; height: {{cropH}}px; width: {{maskLeft}}px;"></view>
+  <view class="mask mask-right" style="top: {{maskTop}}px; left: {{maskRight}}px; height: {{cropH}}px; width: {{maskLeft}}px;"></view>
 
   <!-- Crop Window Border -->
-  <view class="crop-box" style="top: {{maskTop}}px; left: {{maskLeft}}px; width: {{cropSize}}px; height: {{cropSize}}px;">
+  <view class="crop-box" style="top: {{maskTop}}px; left: {{maskLeft}}px; width: {{cropW}}px; height: {{cropH}}px;">
     <!-- Corner marks for aesthetic touch -->
     <view class="corner corner-tl"></view>
     <view class="corner corner-tr"></view>
@@ -45,5 +45,5 @@
   </view>
 
   <!-- Hidden Canvas for cropping and exporting -->
-  <canvas type="2d" id="cropCanvas" class="crop-canvas" style="width: {{cropSize}}px; height: {{cropSize}}px;"></canvas>
+  <canvas type="2d" id="cropCanvas" class="crop-canvas" style="width: {{cropW}}px; height: {{cropH}}px;"></canvas>
 </view>

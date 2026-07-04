@@ -1,13 +1,15 @@
 Page({
   data: {
     src: '',
-    cropSize: 300,
+    cropW: 300,
+    cropH: 200,
     maskTop: 0,
     maskBottom: 0,
+    maskBottomHeight: 0,
     maskLeft: 0,
     maskRight: 0,
     imgWidth: 300,
-    imgHeight: 300,
+    imgHeight: 200,
     x: 0,
     y: 0,
   },
@@ -30,16 +32,23 @@ Page({
     const sysInfo = wx.getSystemInfoSync();
     const W_s = sysInfo.windowWidth;
     const H_s = sysInfo.windowHeight;
-    const cropSize = Math.round(W_s * 0.8);
-    const maskLeft = Math.round((W_s - cropSize) / 2);
-    const maskRight = maskLeft + cropSize;
-    const maskTop = Math.round((H_s - cropSize) / 2 - 60);
-    const maskBottom = maskTop + cropSize;
+    
+    // Crop box width is 90% of screen width, height is calculated using 750:520 ratio
+    const cropW = Math.round(W_s * 0.9);
+    const cropH = Math.round(cropW * (520 / 750));
+    
+    const maskLeft = Math.round((W_s - cropW) / 2);
+    const maskRight = maskLeft + cropW;
+    const maskTop = Math.round((H_s - cropH) / 2 - 60);
+    const maskBottom = maskTop + cropH;
+    const maskBottomHeight = H_s - maskBottom;
 
     this.setData({
-      cropSize,
+      cropW,
+      cropH,
       maskTop,
       maskBottom,
+      maskBottomHeight,
       maskLeft,
       maskRight
     });
@@ -67,7 +76,7 @@ Page({
 
   onImageLoad(e) {
     const { width, height } = e.detail;
-    const { cropSize } = this.data;
+    const { cropW, cropH } = this.data;
     const sysInfo = wx.getSystemInfoSync();
     const W_s = sysInfo.windowWidth;
     const H_s = sysInfo.windowHeight;
@@ -75,14 +84,19 @@ Page({
     this.origW = width;
     this.origH = height;
 
-    let imgWidth = cropSize;
-    let imgHeight = cropSize;
+    let imgWidth = cropW;
+    let imgHeight = cropH;
+
+    const imgAspect = width / height;
+    const cropAspect = cropW / cropH;
 
     // Scale image to fill crop box entirely
-    if (width > height) {
-      imgWidth = Math.round((width / height) * cropSize);
+    if (imgAspect > cropAspect) {
+      imgHeight = cropH;
+      imgWidth = Math.round(cropH * imgAspect);
     } else {
-      imgHeight = Math.round((height / width) * cropSize);
+      imgWidth = cropW;
+      imgHeight = Math.round(cropW / imgAspect);
     }
 
     // Centered coordinates initially
@@ -120,7 +134,7 @@ Page({
   onConfirm() {
     wx.showLoading({ title: '正在裁剪...', mask: true });
 
-    const { cropSize, maskLeft, maskTop, imgWidth } = this.data;
+    const { cropW, cropH, maskLeft, maskTop, imgWidth } = this.data;
 
     // Calculate total scale relative to original image size
     const totalScale = (imgWidth * this.currentScale) / this.origW;
@@ -132,8 +146,8 @@ Page({
     // Map screen displacement to original coordinates
     const sx = -dx / totalScale;
     const sy = -dy / totalScale;
-    const sw = cropSize / totalScale;
-    const sh = cropSize / totalScale;
+    const sw = cropW / totalScale;
+    const sh = cropH / totalScale;
 
     this.drawAndExport(sx, sy, sw, sh);
   },
@@ -155,15 +169,17 @@ Page({
         const canvas = res[0].node;
         const ctx = canvas.getContext('2d');
 
-        const exportSize = 600;
-        canvas.width = exportSize;
-        canvas.height = exportSize;
+        // Set dimensions (750x520) matching the detail page banner
+        const exportW = 750;
+        const exportH = 520;
+        canvas.width = exportW;
+        canvas.height = exportH;
 
         const img = canvas.createImage();
         img.src = src;
         img.onload = () => {
           // Clear canvas
-          ctx.clearRect(0, 0, exportSize, exportSize);
+          ctx.clearRect(0, 0, exportW, exportH);
           
           // Clamp source dimensions to protect bounds
           let sourceX = Math.max(0, sx);
@@ -172,13 +188,13 @@ Page({
           let sourceH = Math.min(self.origH - sourceY, sh);
 
           // Draw cropped portion from original image onto export canvas
-          ctx.drawImage(img, sourceX, sourceY, sourceW, sourceH, 0, 0, exportSize, exportSize);
+          ctx.drawImage(img, sourceX, sourceY, sourceW, sourceH, 0, 0, exportW, exportH);
 
           // Export to temp file
           wx.canvasToTempFilePath({
             canvas: canvas,
-            destWidth: exportSize,
-            destHeight: exportSize,
+            destWidth: exportW,
+            destHeight: exportH,
             fileType: 'jpg',
             quality: 0.95,
             success: (exportRes) => {
