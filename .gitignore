@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# IDE / AI tools
+.trae/
+.agents/
+.workbuddy/
+skills-lock.json
+
+# WeChat DevTools local config
+project.private.config.json

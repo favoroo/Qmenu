@@ -1,3 +1,18 @@
+<wxs module="stars">
+  module.exports = {
+    toStars: function(n) {
+      n = n || 0;
+      var s = '';
+      var i;
+      for (i = 0; i < n; i++) s += '★';
+      for (i = n; i < 5; i++) s += '☆';
+      return s;
+    },
+    hasRating: function(r) {
+      return (r && r > 0);
+    }
+  };
+</wxs>
 <view class="container">
   <!-- Group Selector Header -->
   <view class="group-bar flex-row align-center" wx:if="{{groupsList.length > 1}}">
@@ -7,6 +22,24 @@
         <text class="arrow-down">▼</text>
       </view>
     </picker>
+  </view>
+
+  <!-- Chef Ranking Mini Bar (本月 Top 3) -->
+  <view class="chef-ranking-bar flex-row align-center" wx:if="{{chefRanking.length > 0}}" bindtap="goToOrders">
+    <view class="ranking-bar-label flex-row align-center">
+      <text class="ranking-bar-icon">⭐</text>
+      <text class="ranking-bar-text">星级榜</text>
+    </view>
+    <view class="ranking-bar-chefs flex-row align-center flex-1">
+      <view class="ranking-bar-avatar-group flex-row" wx:for="{{chefRanking}}" wx:for-item="chef" wx:key="chefId">
+        <image class="ranking-bar-avatar" src="{{chef.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+        <text class="ranking-bar-rank rank-{{index + 1}}">{{index + 1}}</text>
+      </view>
+    </view>
+    <view class="ranking-bar-total flex-row align-center">
+      <text class="ranking-bar-stars">{{chefRankingTotalStars}}</text>
+      <text class="ranking-bar-arrow">›</text>
+    </view>
   </view>
 
   <!-- 1. Header Section -->
@@ -85,6 +118,17 @@
                   <text class="recipe-creator" wx:if="{{item.creatorName}}">By {{item.creatorName}}</text>
                 </view>
                 <view class="recipe-desc text-ellipsis-2">{{item.desc || '主人很懒，还没写这道菜的描述~'}}</view>
+                <view class="recipe-rating flex-row align-center" wx:if="{{stars.hasRating(item.deliciousRating) || stars.hasRating(item.difficultyRating)}}">
+                  <block wx:if="{{stars.hasRating(item.deliciousRating)}}">
+                    <text class="rating-tag">美味</text>
+                    <text class="rating-stars rating-delicious">{{stars.toStars(item.deliciousRating)}}</text>
+                  </block>
+                  <text class="rating-sep" wx:if="{{stars.hasRating(item.deliciousRating) && stars.hasRating(item.difficultyRating)}}">·</text>
+                  <block wx:if="{{stars.hasRating(item.difficultyRating)}}">
+                    <text class="rating-tag">难度</text>
+                    <text class="rating-stars rating-difficulty">{{stars.toStars(item.difficultyRating)}}</text>
+                  </block>
+                </view>
               </view>
               <view class="recipe-bottom flex-row justify-between align-center">
                 <view class="recipe-price">
@@ -136,7 +180,7 @@
   </view>
 
   <!-- 3. Floating Random Wheel Button -->
-  <view class="floating-random-btn flex-col justify-center align-center" bindtap="openRandomModal">
+  <view class="floating-random-btn flex-col justify-center align-center {{showCartPopup ? 'hidden' : ''}}" bindtap="openRandomModal" wx:if="{{currentGroup}}">
     <text class="random-icon">🎲</text>
     <text class="random-text">吃什么</text>
   </view>
@@ -274,9 +318,15 @@
         
         <view class="detail-info-container">
           <!-- Title and Category badge -->
-          <view class="detail-title-row flex-row align-center wrap">
-            <text class="detail-name">{{selectedRecipe.name}}</text>
-            <text class="detail-category-badge">{{selectedRecipeCategoryName}}</text>
+          <view class="detail-title-row flex-row align-center justify-between">
+            <view class="flex-row align-center wrap">
+              <text class="detail-name">{{selectedRecipe.name}}</text>
+              <text class="detail-category-badge">{{selectedRecipeCategoryName}}</text>
+            </view>
+            <view class="detail-edit-btn flex-row align-center" wx:if="{{isAdmin}}" catchtap="goRecipeEdit" data-id="{{selectedRecipe.id}}">
+              <text class="edit-icon">✏️</text>
+              <text class="edit-text">编辑</text>
+            </view>
           </view>
           
           <!-- Price -->
@@ -284,7 +334,21 @@
             <text class="detail-price-symbol">¥</text>
             <text class="detail-price-num">{{selectedRecipe.price}}</text>
           </view>
-          
+
+          <!-- Rating -->
+          <view class="detail-rating flex-col" wx:if="{{stars.hasRating(selectedRecipe.deliciousRating) || stars.hasRating(selectedRecipe.difficultyRating)}}">
+            <view class="detail-rating-row flex-row align-center" wx:if="{{stars.hasRating(selectedRecipe.deliciousRating)}}">
+              <text class="detail-rating-label">美味程度</text>
+              <text class="detail-rating-stars rating-delicious">{{stars.toStars(selectedRecipe.deliciousRating)}}</text>
+              <text class="detail-rating-num">{{selectedRecipe.deliciousRating}}/5</text>
+            </view>
+            <view class="detail-rating-row flex-row align-center" wx:if="{{stars.hasRating(selectedRecipe.difficultyRating)}}">
+              <text class="detail-rating-label">制作难度</text>
+              <text class="detail-rating-stars rating-difficulty">{{stars.toStars(selectedRecipe.difficultyRating)}}</text>
+              <text class="detail-rating-num">{{selectedRecipe.difficultyRating}}/5</text>
+            </view>
+          </view>
+
           <!-- Description -->
           <view class="detail-desc-box margin-top-md" wx:if="{{selectedRecipe.desc}}">
             <view class="detail-section-title">菜品介绍</view>

@@ -1,3 +1,18 @@
+<wxs module="stars">
+  module.exports = {
+    toStars: function(n) {
+      n = n || 0;
+      var s = '';
+      var i;
+      for (i = 0; i < n; i++) s += '★';
+      for (i = n; i < 5; i++) s += '☆';
+      return s;
+    },
+    hasRating: function(r) {
+      return (r && r > 0);
+    }
+  };
+</wxs>
 <view class="container">
   <scroll-view class="confirm-scroll" scroll-y>
     <!-- 1. Share banner -->
@@ -15,6 +30,17 @@
         <view class="dish-detail flex-1 flex-row justify-between align-center">
           <view class="dish-name-qty">
             <view class="dish-name">{{item.recipe.name}}</view>
+            <view class="dish-rating flex-row align-center" wx:if="{{stars.hasRating(item.recipe.deliciousRating) || stars.hasRating(item.recipe.difficultyRating)}}">
+              <block wx:if="{{stars.hasRating(item.recipe.deliciousRating)}}">
+                <text class="rating-tag">美味</text>
+                <text class="rating-stars rating-delicious">{{stars.toStars(item.recipe.deliciousRating)}}</text>
+              </block>
+              <text class="rating-sep" wx:if="{{stars.hasRating(item.recipe.deliciousRating) && stars.hasRating(item.recipe.difficultyRating)}}">·</text>
+              <block wx:if="{{stars.hasRating(item.recipe.difficultyRating)}}">
+                <text class="rating-tag">难度</text>
+                <text class="rating-stars rating-difficulty">{{stars.toStars(item.recipe.difficultyRating)}}</text>
+              </block>
+            </view>
             <view class="dish-qty">x{{item.quantity}}</view>
           </view>
           <view class="dish-price">¥{{item.recipe.price * item.quantity}}</view>

@@ -70,6 +70,36 @@
   color: var(--text-main);
 }
 
+.dish-rating {
+  margin-top: 8rpx;
+  flex-wrap: wrap;
+}
+
+.dish-rating .rating-tag {
+  font-size: 20rpx;
+  color: var(--text-light);
+  margin-right: 6rpx;
+}
+
+.dish-rating .rating-stars {
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.dish-rating .rating-delicious {
+  color: var(--danger-color);
+}
+
+.dish-rating .rating-difficulty {
+  color: var(--primary-color);
+}
+
+.dish-rating .rating-sep {
+  margin: 0 10rpx;
+  color: var(--text-light);
+  font-size: 20rpx;
+}
+
 .fee-row {
   border-top: 1rpx solid var(--border-color);
   padding-top: 24rpx;

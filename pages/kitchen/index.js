@@ -76,7 +76,11 @@ Page({
     splashFadeOut: false,
 
     // Loading state
-    loading: true
+    loading: true,
+
+    // Chef ranking (mini bar)
+    chefRanking: [],
+    chefRankingTotalStars: 0
   },
 
   async onLoad(options) {
@@ -94,11 +98,6 @@ Page({
         showSplash: true,
         splashFadeOut: false
       });
-      try {
-        wx.hideTabBar({ animate: false });
-      } catch (e) {
-        console.warn('hideTabBar in onLoad failed', e);
-      }
     }
 
     await app.globalData.loginPromise;
@@ -280,6 +279,12 @@ Page({
     });
   },
 
+  goToOrders() {
+    wx.switchTab({
+      url: '/pages/order/index'
+    });
+  },
+
   async runSplashWorkflow() {
     try {
       wx.hideTabBar({ animate: false });
@@ -287,54 +292,56 @@ Page({
       console.warn('hideTabBar in runSplashWorkflow failed', e);
     }
 
-    const lastGroupId = db.getLastGroupId();
-    if (lastGroupId) {
-      db.setCurrentGroupId(lastGroupId);
-      db.loadFromLocalCache(lastGroupId);
-      const cachedGroups = db.getCachedGroupsList();
-      const currentGroup = cachedGroups.find(g => g._id === lastGroupId) || null;
-      const groupIndex = cachedGroups.findIndex(g => g._id === lastGroupId);
-      const userInfo = wx.getStorageSync('userInfo') || {};
-      const isAdmin = currentGroup && currentGroup.ownerId === (userInfo.openid || '');
-      
-      this.setData({
-        groupsList: cachedGroups,
-        currentGroup: currentGroup,
-        groupIndex: groupIndex > -1 ? groupIndex : 0,
-        isAdmin: isAdmin,
-        loading: false
-      });
-      this.loadData();
-    }
-
-    const timeoutPromise = new Promise(resolve => setTimeout(resolve, 6000));
-    const loadPromise = (async () => {
-      try {
-        await app.globalData.loginPromise;
-        await this.loadGroupsList();
-      } catch (err) {
-        console.error('[Splash] load error', err);
-      }
-    })();
-
-    // 保证最少展示 2.5 秒开屏动画，最长 6 秒超时降级
-    await Promise.race([
-      Promise.all([new Promise(resolve => setTimeout(resolve, 2500)), loadPromise]),
-      timeoutPromise
-    ]);
-
-    // 开始渐隐动画
-    this.setData({ splashFadeOut: true });
-
-    // 等待 css transition (600ms)
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    // 从 DOM 中移除开屏组件，并重新展示 TabBar
-    this.setData({ showSplash: false });
     try {
-      wx.showTabBar();
-    } catch (e) {
-      console.warn('showTabBar failed', e);
+      const lastGroupId = db.getLastGroupId();
+      if (lastGroupId) {
+        db.setCurrentGroupId(lastGroupId);
+        db.loadFromLocalCache(lastGroupId);
+        const cachedGroups = db.getCachedGroupsList();
+        const currentGroup = cachedGroups.find(g => g._id === lastGroupId) || null;
+        const groupIndex = cachedGroups.findIndex(g => g._id === lastGroupId);
+        const userInfo = wx.getStorageSync('userInfo') || {};
+        const isAdmin = currentGroup && currentGroup.ownerId === (userInfo.openid || '');
+
+        this.setData({
+          groupsList: cachedGroups,
+          currentGroup: currentGroup,
+          groupIndex: groupIndex > -1 ? groupIndex : 0,
+          isAdmin: isAdmin,
+          loading: false
+        });
+        this.loadData();
+      }
+
+      const timeoutPromise = new Promise(resolve => setTimeout(resolve, 6000));
+      const loadPromise = (async () => {
+        try {
+          await app.globalData.loginPromise;
+          await this.loadGroupsList();
+        } catch (err) {
+          console.error('[Splash] load error', err);
+        }
+      })();
+
+      // 保证最少展示 1 秒开屏动画，最长 6 秒超时降级
+      await Promise.race([
+        Promise.all([new Promise(resolve => setTimeout(resolve, 1000)), loadPromise]),
+        timeoutPromise
+      ]);
+
+      // 开始渐隐动画
+      this.setData({ splashFadeOut: true });
+
+      // 等待 css transition (600ms)
+      await new Promise(resolve => setTimeout(resolve, 600));
+    } finally {
+      // 无论流程成功与否，都移除开屏组件并恢复 TabBar
+      this.setData({ showSplash: false });
+      try {
+        wx.showTabBar();
+      } catch (e) {
+        console.warn('showTabBar failed', e);
+      }
     }
 
     // 重置购物车弹框状态
@@ -383,22 +390,34 @@ Page({
     const cartCount = db.getCartCount();
     const cartTotal = db.getCartTotal();
 
+    // 厨师排行榜（本月，取 Top 3）
+    const ranking = db.getChefRanking('month');
+    const topRanking = ranking.slice(0, 3);
+    const totalStars = ranking.reduce((sum, r) => sum + r.totalStars, 0);
+    const rankingChanged = JSON.stringify(this.data.chefRanking) !== JSON.stringify(topRanking);
+
     // 简单差异检测：如果分类和菜谱数据未变化，只更新购物车相关数据
     const dataChanged = this._hasDataChanged(categories, recipes);
     
-    if (dataChanged) {
-      const groupedRecipes = this.buildGroupedRecipes(categories, recipes, '');
+    if (dataChanged || rankingChanged) {
+      const groupedRecipes = dataChanged ? this.buildGroupedRecipes(categories, recipes, '') : this.data.groupedRecipes;
       this.setData({
-        categories,
-        activeCategoryId,
-        activeCategoryName,
-        recipes,
-        groupedRecipes,
+        ...(dataChanged ? {
+          categories,
+          activeCategoryId,
+          activeCategoryName,
+          recipes,
+          groupedRecipes
+        } : {}),
         cart,
         cartCount,
-        cartTotal
+        cartTotal,
+        chefRanking: topRanking,
+        chefRankingTotalStars: totalStars
       }, () => {
-        this.filterRecipes();
+        if (dataChanged) {
+          this.filterRecipes();
+        }
       });
     } else {
       // 只更新购物车数据，避免列表重渲染
@@ -434,17 +453,30 @@ Page({
     const oldCategories = this.data.categories;
     const oldRecipes = this.data.recipes;
 
+    // 1. 长度变化 → 必然变化
     if (oldCategories.length !== newCategories.length) return true;
     if (oldRecipes.length !== newRecipes.length) return true;
 
-    if (newCategories.length > 0) {
-      if (oldCategories[0].id !== newCategories[0].id) return true;
-      if (oldCategories[oldCategories.length - 1].id !== newCategories[newCategories.length - 1].id) return true;
+    // 2. 逐项比较菜谱关键字段（覆盖改名/改价/改图/改状态/改分类等场景）
+    const recipeKeys = ['id', 'name', 'price', 'image', 'status', 'categoryId', 'desc'];
+    for (let i = 0; i < newRecipes.length; i++) {
+      const oldR = oldRecipes[i];
+      const newR = newRecipes[i];
+      if (!oldR) return true;
+      for (const k of recipeKeys) {
+        if (oldR[k] !== newR[k]) return true;
+      }
     }
 
-    if (newRecipes.length > 0) {
-      if (oldRecipes[0].id !== newRecipes[0].id) return true;
-      if (oldRecipes[oldRecipes.length - 1].id !== newRecipes[newRecipes.length - 1].id) return true;
+    // 3. 逐项比较分类关键字段
+    const catKeys = ['id', 'name'];
+    for (let i = 0; i < newCategories.length; i++) {
+      const oldC = oldCategories[i];
+      const newC = newCategories[i];
+      if (!oldC) return true;
+      for (const k of catKeys) {
+        if (oldC[k] !== newC[k]) return true;
+      }
     }
 
     return false;

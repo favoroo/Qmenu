@@ -62,13 +62,15 @@
           wx:for-item="recipe"
           wx:key="id"
           class="dish-row flex-row align-center {{draggingRecipe.id === recipe.id ? 'dragging' : ''}}"
-          bindlongpress="onRecipeLongPress"
-          catchtouchmove="onRecipeTouchMove"
-          catchtouchend="onRecipeTouchEnd"
-          data-recipe="{{recipe}}"
-          data-catid="{{item.id}}"
         >
-          <view class="dish-grip">
+          <view
+            class="dish-grip"
+            bindlongpress="onRecipeLongPress"
+            catchtouchmove="onRecipeTouchMove"
+            catchtouchend="onRecipeTouchEnd"
+            data-recipe="{{recipe}}"
+            data-catid="{{item.id}}"
+          >
             <view class="dish-grip-bar"></view>
             <view class="dish-grip-bar"></view>
             <view class="dish-grip-bar"></view>

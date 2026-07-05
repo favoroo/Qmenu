@@ -1,0 +1,8 @@
+{
+  "name": "cleanupOrphanImages",
+  "version": "1.0.0",
+  "description": "定时清理云存储中的孤儿图片(记录在 orphan_images 集合中的失败删除项)",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

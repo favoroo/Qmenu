@@ -11,7 +11,11 @@ Page({
     categoryIndex: 0,
     categoryName: '请选择分类',
     imagePath: '',
-    
+
+    // 评级（0=未评级，1-5 星）
+    deliciousRating: 0,
+    difficultyRating: 0,
+
     // 用料做法相关
     hasMaterialStep: false,
     materialsPublic: true,
@@ -90,6 +94,8 @@ Page({
         desc: recipe.desc || '',
         imagePath: recipe.image || '',
         categoryIndex: categoryIndex > -1 ? categoryIndex : 0,
+        deliciousRating: recipe.deliciousRating || 0,
+        difficultyRating: recipe.difficultyRating || 0,
         hasMaterialStep: recipe.hasMaterialStep || false,
         materialsPublic: recipe.materialsPublic !== false,
         materials: recipe.materials && recipe.materials.length > 0 ? recipe.materials : [{ name: '', weight: '' }],
@@ -112,6 +118,15 @@ Page({
 
   onDescInput(e) {
     this.setData({ desc: e.detail.value });
+  },
+
+  // 评级行星点击
+  onDeliciousRatingChange(e) {
+    this.setData({ deliciousRating: parseInt(e.currentTarget.dataset.rating) });
+  },
+
+  onDifficultyRatingChange(e) {
+    this.setData({ difficultyRating: parseInt(e.currentTarget.dataset.rating) });
   },
 
   onCategoryChange(e) {
@@ -351,9 +366,10 @@ Page({
 
   // Form submission (Save / Update)
   async submitForm() {
-    const { 
+    const {
       recipeId, name, price, desc, categories, categoryIndex, imagePath, isSubmitting,
-      hasMaterialStep, materialsPublic, materials, stepsPublic, steps
+      hasMaterialStep, materialsPublic, materials, stepsPublic, steps,
+      deliciousRating, difficultyRating
     } = this.data;
     
     if (isSubmitting) return;
@@ -420,7 +436,9 @@ Page({
         materialsPublic,
         materials: finalMaterials,
         stepsPublic,
-        steps: finalSteps
+        steps: finalSteps,
+        deliciousRating: deliciousRating || 0,
+        difficultyRating: difficultyRating || 0
       };
 
       if (recipeId) {

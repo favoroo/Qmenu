@@ -1,8 +1,65 @@
 <view class="container">
+  <!-- Chef Ranking Card -->
+  <view class="ranking-card">
+    <view class="ranking-header flex-row align-center justify-between">
+      <view class="ranking-title-row flex-row align-center">
+        <text class="ranking-title">厨师星级榜</text>
+        <text class="ranking-sub" wx:if="{{rankingTotalChefs > 0}}">共 {{rankingTotalChefs}} 位</text>
+      </view>
+      <view class="ranking-period-tabs flex-row">
+        <view class="period-tab {{rankingPeriod === 'month' ? 'active' : ''}}" catchtap="switchRankingPeriod" data-period="month">本月</view>
+        <view class="period-tab {{rankingPeriod === 'year' ? 'active' : ''}}" catchtap="switchRankingPeriod" data-period="year">今年</view>
+        <view class="period-tab {{rankingPeriod === 'all' ? 'active' : ''}}" catchtap="switchRankingPeriod" data-period="all">全部</view>
+      </view>
+    </view>
+
+    <block wx:if="{{ranking.length > 0}}">
+      <view class="ranking-stats-row flex-row align-center">
+        <view class="ranking-stat-item flex-row align-center">
+          <text class="ranking-stat-icon">⭐</text>
+          <text class="ranking-stat-num">{{totalStars}}</text>
+          <text class="ranking-stat-label">总星数</text>
+        </view>
+        <view class="ranking-stat-divider"></view>
+        <view class="ranking-stat-item flex-row align-center">
+          <text class="ranking-stat-icon">📝</text>
+          <text class="ranking-stat-num">{{totalRatings}}</text>
+          <text class="ranking-stat-label">次评价</text>
+        </view>
+      </view>
+
+      <view class="ranking-list">
+        <view class="ranking-item flex-row align-center" wx:for="{{ranking}}" wx:key="chefId">
+          <view class="rank-badge rank-{{index + 1}}">{{index + 1}}</view>
+          <image class="rank-avatar" src="{{item.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+          <view class="rank-info flex-1">
+            <view class="rank-name-row flex-row align-center justify-between">
+              <text class="rank-name text-ellipsis">{{item.chefName}}</text>
+              <text class="rank-stars-num">{{item.totalStars}}</text>
+            </view>
+            <view class="rank-meta-row flex-row align-center justify-between">
+              <view class="rank-stars-bar flex-row">
+                <text class="rank-star-cell {{i <= item.totalStars ? 'filled' : ''}}" wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}" wx:for-item="i" wx:key="*this">★</text>
+              </view>
+              <text class="rank-meta">{{item.ratingCount}}次 · 均{{item.avgStars}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="ranking-empty flex-col align-center" wx:else>
+      <view class="ranking-empty-icon">⭐</view>
+      <view class="ranking-empty-title">还没有评分数据</view>
+      <view class="ranking-empty-desc">完成订单后给厨师打个分吧</view>
+    </view>
+  </view>
+
   <!-- Tab Bar -->
   <view class="tab-bar flex-row">
     <view class="tab-item {{activeTab === 'kitchen' ? 'active' : ''}}" bindtap="onTabChange" data-tab="kitchen">厨房订单</view>
-    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine">我的订单</view>
+    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine">我下的订单</view>
+    <view class="tab-item {{activeTab === 'cooked' ? 'active' : ''}}" bindtap="onTabChange" data-tab="cooked">我完成的订单</view>
   </view>
 
   <!-- Subscribe Banner (kitchen tab only) -->
@@ -75,7 +132,7 @@
 
       <!-- Card Actions -->
       <view class="order-actions flex-row justify-end">
-        <!-- 我的订单 Tab: 删除 + 提醒厨师/再来一单 -->
+        <!-- 我下的订单 Tab: 删除 + 提醒厨师/再来一单 -->
         <block wx:if="{{activeTab === 'mine'}}">
           <button 
             class="btn-action-delete" 
@@ -124,6 +181,24 @@
             再来一单
           </button>
         </block>
+
+        <!-- 评价厨师 / 已评价徽章（全 tab 显示，基于订单归属判定） -->
+        <button 
+          class="btn-action-rate" 
+          wx:if="{{item.canRate}}" 
+          catchtap="openRatingModal" 
+          data-id="{{item.id}}"
+        >
+          评价厨师
+        </button>
+        <view class="rated-badge" wx:elif="{{item.isMyOrder && item.isRatedByMe && item.status === 'done'}}">
+          <text class="rated-badge-star">★</text>
+          <text class="rated-badge-num">{{item.myRatingStars}}</text>
+        </view>
+        <view class="chef-rated-badge" wx:elif="{{item.isChefMe && item.chefRatingStars > 0 && item.status === 'done'}}">
+          <text class="chef-rated-star">⭐</text>
+          <text class="chef-rated-text">获 {{item.chefRatingStars}} 星</text>
+        </view>
       </view>
     </view>
     <view style="height: 40rpx;"></view> <!-- Bottom spacing -->
@@ -132,8 +207,8 @@
   <!-- Empty State -->
   <view class="empty-orders flex-col align-center justify-center" wx:else>
     <icon type="warn" size="64" color="#cbd5e0" style="margin-bottom: 30rpx;"></icon>
-    <view class="empty-title">{{activeTab === 'mine' ? '暂无我的订单' : '厨房暂无订单'}}</view>
-    <view class="empty-subtitle">{{activeTab === 'mine' ? '快去厨房挑选心仪的美味吧！' : '等待群友下单后这里会显示订单'}}</view>
+    <view class="empty-title">{{activeTab === 'mine' ? '暂无我下的订单' : (activeTab === 'cooked' ? '暂无我完成的订单' : '厨房暂无订单')}}</view>
+    <view class="empty-subtitle">{{activeTab === 'mine' ? '快去厨房挑选心仪的美味吧！' : (activeTab === 'cooked' ? '等待群友指派你为厨师后这里会显示' : '等待群友下单后这里会显示订单')}}</view>
     <button class="btn-primary margin-top-lg" bindtap="goToKitchen" wx:if="{{activeTab === 'mine'}}">去厨房逛逛</button>
   </view>
 
@@ -233,5 +308,39 @@
         </view>
       </scroll-view>
     </block>
+  </view>
+
+  <!-- Rating Modal -->
+  <view class="rating-overlay" wx:if="{{showRatingModal}}" catchtap="cancelRating"></view>
+  <view class="rating-modal flex-col" wx:if="{{showRatingModal && ratingOrder}}" catchtap="preventTap">
+    <view class="rating-modal-title">评价厨师</view>
+
+    <view class="rating-chef-row flex-row align-center" wx:if="{{ratingOrder}}">
+      <image class="rating-chef-avatar" src="{{ratingOrder.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+      <view class="rating-chef-info flex-1">
+        <view class="rating-chef-name">{{ratingOrder.chefName}}</view>
+        <view class="rating-chef-sub">单号：{{ratingOrder.id}}</view>
+      </view>
+    </view>
+
+    <view class="rating-stars-row flex-row">
+      <text
+        class="rating-star-cell {{item <= ratingStars ? 'filled' : ''}}"
+        wx:for="{{[1,2,3,4,5,6,7,8,9,10]}}"
+        wx:key="*this"
+        catchtap="onSelectRatingStar"
+        data-star="{{item}}"
+      >★</text>
+    </view>
+
+    <view class="rating-stars-value">
+      <text wx:if="{{ratingStars > 0}}">{{ratingStars}} 星</text>
+      <text wx:else class="rating-stars-placeholder">点击星星给厨师打分（1-10 星）</text>
+    </view>
+
+    <view class="rating-modal-actions flex-row">
+      <button class="btn-rating-cancel" catchtap="cancelRating">取消</button>
+      <button class="btn-rating-submit" catchtap="submitRating">提交评分</button>
+    </view>
   </view>
 </view>

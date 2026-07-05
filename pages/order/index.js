@@ -5,7 +5,7 @@ Page({
   data: {
     orders: [],
     filteredOrders: [],
-    activeTab: 'kitchen',     // 'mine' | 'kitchen'
+    activeTab: 'kitchen',     // 'mine' | 'kitchen' | 'cooked'
     myOpenid: '',
     showSubscribeBanner: false,
     showDetailModal: false,
@@ -14,13 +14,26 @@ Page({
     activeTimerStepIndex: -1,
     timerSecondsLeft: 0,
     formattedTimeLeft: '00:00',
-    isAdmin: false
+    isAdmin: false,
+
+    // 厨师排行榜
+    ranking: [],
+    rankingPeriod: 'month',   // 'month' | 'year' | 'all'
+    rankingTotalChefs: 0,
+    totalRatings: 0,
+    totalStars: 0,
+
+    // 评分弹窗
+    showRatingModal: false,
+    ratingOrder: null,
+    ratingStars: 0,
+    isSubmittingRating: false
   },
 
   onLoad(options) {
-    // Support deep-link from subscription message: pages/order/index?tab=mine
-    if (options && options.tab === 'mine') {
-      this.setData({ activeTab: 'mine' });
+    // Support deep-link from subscription message: pages/order/index?tab=mine|cooked
+    if (options && (options.tab === 'mine' || options.tab === 'cooked')) {
+      this.setData({ activeTab: options.tab });
     }
   },
 
@@ -80,18 +93,46 @@ Page({
     }
     
     const orders = db.getOrders();
+    // 为每个订单附上评分相关信息，便于按钮显隐判定
+    const ordersWithRating = orders.map(o => {
+      const ordererId = o.userOpenid || o._openid || '';
+      const isMyOrder = !!myOpenid && ordererId === myOpenid;
+      const isChefMe = !!myOpenid && o.chefId && o.chefId === myOpenid;
+      const myRating = (isMyOrder && myOpenid) ? db.getOrderRating(o.id, myOpenid) : null;
+      const isRatedByMe = !!(myRating && myRating.raterId === myOpenid);
+
+      // 厨师视角：该订单获得的评分（当我是厨师时）
+      let chefRatingStars = 0;
+      if (isChefMe) {
+        const allRatings = db.getRatings();
+        const r = allRatings.find(rt => rt.orderId === o.id && rt.chefId === myOpenid);
+        if (r) chefRatingStars = r.stars || 0;
+      }
+
+      return {
+        ...o,
+        isMyOrder: isMyOrder,
+        isChefMe: isChefMe,
+        myRatingStars: myRating ? myRating.stars : 0,
+        isRatedByMe: isRatedByMe,
+        chefRatingStars: chefRatingStars,
+        // 可评分条件：我是下单者 + 订单已完成 + 有厨师 + 厨师不是我 + 还没评过分
+        canRate: isMyOrder && o.status === 'done' && !!o.chefId && !isChefMe && !isRatedByMe
+      };
+    });
     
     // Determine subscribe banner visibility (kitchen tab, not subscribed recently)
     const subscribedAt = wx.getStorageSync('chefNotifySubscribedAt') || 0;
     const showBanner = this.data.activeTab === 'kitchen' && (Date.now() - subscribedAt > 7 * 24 * 3600 * 1000);
     
     this.setData({
-      orders: orders,
+      orders: ordersWithRating,
       isAdmin: isAdmin,
       myOpenid: myOpenid,
       showSubscribeBanner: showBanner
     }, () => {
       this.applyTabFilter();
+      this.loadRanking();
     });
   },
 
@@ -101,6 +142,9 @@ Page({
     let list = orders;
     if (activeTab === 'mine') {
       list = orders.filter(o => (o.userOpenid || o._openid || '') === myOpenid);
+    } else if (activeTab === 'cooked') {
+      // 我完成的订单：别人指派给我当厨师的订单
+      list = orders.filter(o => o.chefId && o.chefId === myOpenid);
     }
     // kitchen: show all
     this.setData({ filteredOrders: list });
@@ -218,13 +262,13 @@ Page({
   deleteOrder(e) {
     const orderId = e.currentTarget.dataset.id;
     const self = this;
-    
+
     wx.showModal({
       title: '删除订单',
       content: '确定要删除这条订单记录吗？',
-      success(res) {
+      async success(res) {
         if (res.confirm) {
-          db.deleteOrder(orderId);
+          await db.deleteOrder(orderId);
           self.loadOrders();
           wx.showToast({
             title: '删除成功',
@@ -239,6 +283,122 @@ Page({
     wx.switchTab({
       url: '/pages/kitchen/index'
     });
+  },
+
+  // --- Chef Ranking ---
+  loadRanking() {
+    const period = this.data.rankingPeriod;
+    const ranking = db.getChefRanking(period);
+    const allRatings = db.getRatings();
+    const now = Date.now();
+    let sinceMs = 0;
+    if (period === 'month') sinceMs = now - 30 * 24 * 3600 * 1000;
+    else if (period === 'year') sinceMs = now - 365 * 24 * 3600 * 1000;
+    const periodRatings = sinceMs > 0
+      ? allRatings.filter(r => (r.createTimeMs || 0) >= sinceMs)
+      : allRatings;
+    const totalRatings = periodRatings.length;
+    const totalStars = periodRatings.reduce((sum, r) => sum + (r.stars || 0), 0);
+
+    this.setData({
+      ranking: ranking.slice(0, 5),
+      rankingTotalChefs: ranking.length,
+      totalRatings: totalRatings,
+      totalStars: totalStars
+    });
+  },
+
+  switchRankingPeriod(e) {
+    const period = e.currentTarget.dataset.period;
+    if (!period || period === this.data.rankingPeriod) return;
+    this.setData({ rankingPeriod: period }, () => {
+      this.loadRanking();
+    });
+  },
+
+  // --- Order Rating ---
+  openRatingModal(e) {
+    const orderId = e.currentTarget.dataset.id;
+    const order = this.data.orders.find(o => o.id === orderId);
+    if (!order) return;
+    if (!order.chefId) {
+      wx.showToast({ title: '该订单未指定厨师', icon: 'none' });
+      return;
+    }
+    if (order.chefId === this.data.myOpenid) {
+      wx.showToast({ title: '不能给自己评分', icon: 'none' });
+      return;
+    }
+    if (order.isRatedByMe) {
+      wx.showToast({ title: '该订单已评分', icon: 'none' });
+      return;
+    }
+    this.setData({
+      showRatingModal: true,
+      ratingOrder: order,
+      ratingStars: 0,
+      isSubmittingRating: false
+    });
+  },
+
+  onSelectRatingStar(e) {
+    const star = parseInt(e.currentTarget.dataset.star);
+    if (!star || star < 1 || star > 10) return;
+    this.setData({ ratingStars: star });
+  },
+
+  cancelRating() {
+    this.setData({
+      showRatingModal: false,
+      ratingOrder: null,
+      ratingStars: 0,
+      isSubmittingRating: false
+    });
+  },
+
+  // 阻止评分弹窗内容区点击事件冒泡到遮罩
+  preventTap() {},
+
+  async submitRating() {
+    const { ratingOrder, ratingStars, isSubmittingRating } = this.data;
+    if (isSubmittingRating) return;
+    if (!ratingOrder) return;
+    if (!ratingStars || ratingStars < 1 || ratingStars > 10) {
+      wx.showToast({ title: '请选择 1-10 星评分', icon: 'none' });
+      return;
+    }
+
+    this.setData({ isSubmittingRating: true });
+    wx.showLoading({ title: '提交中...', mask: true });
+
+    try {
+      await db.addRating({
+        orderId: ratingOrder.id,
+        chefId: ratingOrder.chefId,
+        chefName: ratingOrder.chefName,
+        chefAvatar: ratingOrder.chefAvatar,
+        stars: ratingStars
+      });
+
+      wx.hideLoading();
+      this.setData({
+        showRatingModal: false,
+        ratingOrder: null,
+        ratingStars: 0,
+        isSubmittingRating: false
+      });
+
+      // 刷新订单列表（更新可评分状态）与排行榜
+      this.loadOrders();
+
+      wx.showToast({ title: '评分成功', icon: 'success' });
+      wx.vibrateShort();
+    } catch (err) {
+      console.error('[rating] 提交评分失败', err);
+      wx.hideLoading();
+      this.setData({ isSubmittingRating: false });
+      wx.showToast({ title: '提交失败，请重试', icon: 'none' });
+    }
   },
 
   // View recipe detail of the selected dish (directly open popup modal on the order page)

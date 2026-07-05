@@ -65,6 +65,37 @@
       <text class="char-counter">{{desc.length}}/200</text>
     </view>
 
+    <!-- 评级 -->
+    <view class="form-group rating-group">
+      <view class="rating-row flex-row justify-between align-center">
+        <text class="form-label">美味程度</text>
+        <view class="stars-input flex-row align-center">
+          <text
+            class="star {{item <= deliciousRating ? 'star-active' : 'star-empty'}}"
+            wx:for="{{[1,2,3,4,5]}}"
+            wx:key="*this"
+            data-rating="{{item}}"
+            catchtap="onDeliciousRatingChange"
+          >★</text>
+          <text class="rating-value-text" wx:if="{{deliciousRating > 0}}">{{deliciousRating}}星</text>
+        </view>
+      </view>
+      <view class="rating-row flex-row justify-between align-center">
+        <text class="form-label">制作难度</text>
+        <view class="stars-input flex-row align-center">
+          <text
+            class="star {{item <= difficultyRating ? 'star-active star-difficulty' : 'star-empty'}}"
+            wx:for="{{[1,2,3,4,5]}}"
+            wx:key="*this"
+            data-rating="{{item}}"
+            catchtap="onDifficultyRatingChange"
+          >★</text>
+          <text class="rating-value-text" wx:if="{{difficultyRating > 0}}">{{difficultyRating}}星</text>
+        </view>
+      </view>
+      <text class="rating-hint">选填，可根据品尝体验和制作复杂度打分（1-5 星）</text>
+    </view>
+
     <!-- 4. 用料做法开关 -->
     <view class="form-group flex-row justify-between align-center" style="margin-top: 40rpx; margin-bottom: 20rpx;">
       <view class="flex-col">

@@ -5,6 +5,7 @@ let cloudCache = {
   categories: [],
   recipes: [],
   orders: [],
+  ratings: [],
   cart: {},
   cartDocId: '' // 缓存购物车文档 _id，避免每次操作都查询
 };
@@ -18,8 +19,10 @@ const GROUPS_LIST_KEY = 'cachedGroupsList';
 
 const DEFAULT_CATEGORIES = [
   { id: 'cat_default', name: '默认分类', sort: 1 },
-  { id: 'cat_signature', name: '招牌私房菜', sort: 2 },
-  { id: 'cat_soup', name: '滋补汤羹', sort: 3 }
+  { id: 'cat_signature', name: '招牌菜', sort: 2 },
+  { id: 'cat_meat', name: '肉类', sort: 3 },
+  { id: 'cat_vegetable', name: '蔬菜', sort: 4 },
+  { id: 'cat_soup', name: '汤类', sort: 5 }
 ];
 
 const DEFAULT_RECIPES = [
@@ -31,6 +34,8 @@ const DEFAULT_RECIPES = [
     image: '/assets/images/default_food.png',
     desc: '地道椒麻鸡，皮脆肉嫩，麻辣爽口，香气扑鼻！',
     status: 1,
+    deliciousRating: 5,
+    difficultyRating: 4,
     hasMaterialStep: true,
     materialsPublic: true,
     materials: [
@@ -59,6 +64,8 @@ const DEFAULT_RECIPES = [
     image: '/assets/images/default_food.png',
     desc: '肥而不腻，入口即化，经典的家常美味。',
     status: 1,
+    deliciousRating: 5,
+    difficultyRating: 3,
     hasMaterialStep: true,
     materialsPublic: true,
     materials: [
@@ -90,6 +97,8 @@ const DEFAULT_RECIPES = [
     image: '/assets/images/default_food.png',
     desc: '清淡解腻，营养丰富，经典汤品。',
     status: 1,
+    deliciousRating: 4,
+    difficultyRating: 1,
     hasMaterialStep: true,
     materialsPublic: true,
     materials: [
@@ -130,6 +139,7 @@ const db = {
         cloudCache.categories = cached.categories;
         cloudCache.recipes = cached.recipes || [];
         cloudCache.orders = cached.orders || [];
+        cloudCache.ratings = cached.ratings || [];
         cloudCache.cart = cached.cart || {};
         cloudCache.cartDocId = ''; // 重置，由 _fetchCart 或 _ensureCartDocId 重新获取
         currentGroupId = groupId;
@@ -148,6 +158,7 @@ const db = {
         categories: cloudCache.categories,
         recipes: cloudCache.recipes,
         orders: cloudCache.orders,
+        ratings: cloudCache.ratings,
         cart: cloudCache.cart,
         updatedAt: Date.now()
       });
@@ -184,6 +195,7 @@ const db = {
       cloudCache.categories = [];
       cloudCache.recipes = [];
       cloudCache.orders = [];
+      cloudCache.ratings = [];
       cloudCache.cart = {};
       cloudCache.cartDocId = '';
       return;
@@ -193,17 +205,19 @@ const db = {
     try {
       const dbInstance = wx.cloud.database();
 
-      // 4 个独立查询并行执行（原串行 → 并行）
-      const [categories, recipes, orders, cart] = await Promise.all([
+      // 5 个独立查询并行执行（原串行 → 并行）
+      const [categories, recipes, orders, ratings, cart] = await Promise.all([
         this._fetchCategories(dbInstance, gid),
         this._fetchRecipes(dbInstance, gid),
         this._fetchOrders(dbInstance, gid),
+        this._fetchRatings(dbInstance, gid),
         this._fetchCart(dbInstance, gid)
       ]);
 
       cloudCache.categories = categories;
       cloudCache.recipes = recipes;
       cloudCache.orders = orders;
+      cloudCache.ratings = ratings;
       cloudCache.cart = cart;
 
       // 落盘本地缓存，供下次冷启动瞬时渲染
@@ -250,6 +264,8 @@ const db = {
             image: rec.image,
             desc: rec.desc,
             status: rec.status,
+            deliciousRating: rec.deliciousRating || 0,
+            difficultyRating: rec.difficultyRating || 0,
             hasMaterialStep: rec.hasMaterialStep,
             materials: rec.materials,
             materialsPublic: rec.materialsPublic,
@@ -272,6 +288,20 @@ const db = {
       .orderBy('createTime', 'desc')
       .get();
     return ordRes.data;
+  },
+
+  async _fetchRatings(dbInstance, gid) {
+    try {
+      let rateRes = await dbInstance.collection('ratings')
+        .where({ groupId: gid })
+        .orderBy('createTimeMs', 'desc')
+        .get();
+      return rateRes.data;
+    } catch (e) {
+      // ratings 集合可能尚未创建，首次访问会报错，降级为空数组
+      console.warn('[db] _fetchRatings failed', e);
+      return [];
+    }
   },
 
   async _fetchCart(dbInstance, gid) {
@@ -381,6 +411,8 @@ const db = {
       image: recipe.image || '/assets/images/default_food.png',
       desc: recipe.desc || '',
       status: 1,
+      deliciousRating: recipe.deliciousRating || 0,
+      difficultyRating: recipe.difficultyRating || 0,
       hasMaterialStep: !!recipe.hasMaterialStep,
       materials: recipe.materials || [],
       materialsPublic: recipe.materialsPublic !== false,
@@ -421,7 +453,9 @@ const db = {
         materials: updated.materials !== undefined ? updated.materials : old.materials,
         materialsPublic: updated.materialsPublic !== undefined ? (updated.materialsPublic !== false) : old.materialsPublic,
         steps: updated.steps !== undefined ? updated.steps : old.steps,
-        stepsPublic: updated.stepsPublic !== undefined ? (updated.stepsPublic !== false) : old.stepsPublic
+        stepsPublic: updated.stepsPublic !== undefined ? (updated.stepsPublic !== false) : old.stepsPublic,
+        deliciousRating: updated.deliciousRating !== undefined ? (updated.deliciousRating || 0) : (old.deliciousRating || 0),
+        difficultyRating: updated.difficultyRating !== undefined ? (updated.difficultyRating || 0) : (old.difficultyRating || 0)
       };
       list[index] = newRec;
 
@@ -447,7 +481,7 @@ const db = {
     const list = this.getRecipes();
     const target = list.find(r => r.id === id);
     if (target) {
-      imageUtil.removeImagesSync(imageUtil.collectRecipeImages(target));
+      const imagePaths = imageUtil.collectRecipeImages(target);
       if (target._id) {
         const dbInstance = wx.cloud.database();
         try {
@@ -457,6 +491,8 @@ const db = {
           throw err;
         }
       }
+      // 文档删除成功后,再删图片(失败记录到 orphan_images,不抛错)
+      await imageUtil.removeImagesAsync(imagePaths);
     }
     cloudCache.recipes = list.filter(item => item.id !== id);
     this.removeFromCartCompletely(id);
@@ -623,14 +659,21 @@ const db = {
     });
   },
 
-  deleteOrder(orderId) {
+  async deleteOrder(orderId) {
     const orders = this.getOrders();
     const target = orders.find(o => o.id === orderId);
     if (target && target._id) {
       const dbInstance = wx.cloud.database();
-      dbInstance.collection('orders').doc(target._id).remove();
+      try {
+        await dbInstance.collection('orders').doc(target._id).remove();
+        // 同步清理该订单的 ratings
+        await dbInstance.collection('ratings').where({ orderId: target.id }).remove();
+      } catch (err) {
+        console.error('[db] deleteOrder 云端删除失败', err);
+      }
     }
     cloudCache.orders = orders.filter(o => o.id !== orderId);
+    cloudCache.ratings = (cloudCache.ratings || []).filter(r => r.orderId !== orderId);
     this.saveToLocalCache(currentGroupId);
   },
 
@@ -707,6 +750,127 @@ const db = {
       ' ' +
       [hour, minute, second].map(n => n.toString().padStart(2, '0')).join(':')
     );
+  },
+
+  // --- Rating APIs ---
+  getRatings() {
+    return cloudCache.ratings || [];
+  },
+
+  // 检查订单是否已被当前用户评分过；传入 myOpenid 时严格判定
+  getOrderRating(orderId, myOpenid) {
+    const ratings = this.getRatings();
+    if (myOpenid) {
+      return ratings.find(r => r.orderId === orderId && r.raterId === myOpenid) || null;
+    }
+    return ratings.find(r => r.orderId === orderId) || null;
+  },
+
+  // 新增评分；同一订单同一评分者只允许一次
+  async addRating(rating) {
+    if (!currentGroupId) return null;
+    if (!rating || !rating.orderId || !rating.chefId || !rating.stars) return null;
+    if (rating.stars < 1 || rating.stars > 10) return null;
+
+    const stars = parseInt(rating.stars);
+    const userInfo = wx.getStorageSync('userInfo') || { nickName: '吃货', avatarUrl: '/assets/images/default_avatar.png' };
+
+    // 幂等校验：当前用户对同一订单只能评分一次
+    const existing = this.getOrderRating(rating.orderId, userInfo.openid || '');
+    if (existing) {
+      return existing;
+    }
+
+    const now = Date.now();
+    const newRating = {
+      id: 'rate_' + now + Math.random().toString(36).substr(2, 5),
+      groupId: currentGroupId,
+      orderId: rating.orderId,
+      chefId: rating.chefId,
+      chefName: rating.chefName || '',
+      chefAvatar: rating.chefAvatar || '',
+      raterId: userInfo.openid || '',
+      raterName: userInfo.nickName || '匿名用户',
+      raterAvatar: userInfo.avatarUrl || '',
+      stars: stars,
+      createTime: this.formatTime(new Date(now)),
+      createTimeMs: now
+    };
+
+    cloudCache.ratings.unshift(newRating);
+    this.saveToLocalCache(currentGroupId);
+
+    try {
+      const dbInstance = wx.cloud.database();
+      const res = await dbInstance.collection('ratings').add({
+        data: newRating
+      });
+      newRating._id = res.id;
+      return newRating;
+    } catch (err) {
+      console.error('[db] addRating 云端写入失败', err);
+      // 回滚本地缓存
+      cloudCache.ratings = cloudCache.ratings.filter(r => r.id !== newRating.id);
+      this.saveToLocalCache(currentGroupId);
+      throw err;
+    }
+  },
+
+  // 计算厨师星级排名；period: 'month' | 'year' | 'all'
+  getChefRanking(period) {
+    const ratings = this.getRatings();
+    if (ratings.length === 0) return [];
+
+    const now = Date.now();
+    let sinceMs = 0;
+    if (period === 'month') {
+      // 最近一个月（30 天）
+      sinceMs = now - 30 * 24 * 3600 * 1000;
+    } else if (period === 'year') {
+      // 最近一年（365 天）
+      sinceMs = now - 365 * 24 * 3600 * 1000;
+    }
+
+    const filtered = sinceMs > 0
+      ? ratings.filter(r => (r.createTimeMs || 0) >= sinceMs)
+      : ratings;
+
+    // 按厨师聚合
+    const map = {};
+    filtered.forEach(r => {
+      if (!map[r.chefId]) {
+        map[r.chefId] = {
+          chefId: r.chefId,
+          chefName: r.chefName || '神秘厨师',
+          chefAvatar: r.chefAvatar || '/assets/images/default_avatar.png',
+          totalStars: 0,
+          ratingCount: 0,
+          lastRatingMs: 0
+        };
+      }
+      const entry = map[r.chefId];
+      entry.totalStars += (r.stars || 0);
+      entry.ratingCount += 1;
+      // 取最新评分时间戳对应的厨师信息（昵称/头像可能变更）
+      if ((r.createTimeMs || 0) > entry.lastRatingMs) {
+        entry.lastRatingMs = r.createTimeMs || 0;
+        entry.chefName = r.chefName || entry.chefName;
+        entry.chefAvatar = r.chefAvatar || entry.chefAvatar;
+      }
+    });
+
+    const list = Object.values(map).map(e => ({
+      ...e,
+      avgStars: e.ratingCount > 0 ? +(e.totalStars / e.ratingCount).toFixed(1) : 0
+    }));
+
+    // 总星数降序，次按平均星数降序
+    list.sort((a, b) => {
+      if (b.totalStars !== a.totalStars) return b.totalStars - a.totalStars;
+      return b.avgStars - a.avgStars;
+    });
+
+    return list;
   }
 };
 

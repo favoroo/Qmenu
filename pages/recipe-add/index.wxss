@@ -359,3 +359,52 @@
   border: 1rpx solid rgba(37, 99, 235, 0.22);
   font-weight: bold;
 }
+
+/* 评级样式 */
+.rating-group {
+  margin-top: 20rpx;
+}
+
+.rating-row {
+  width: 100%;
+  padding: 16rpx 0;
+}
+
+.rating-row + .rating-row {
+  border-top: 1rpx solid var(--border-color);
+}
+
+.stars-input {
+  gap: 12rpx;
+}
+
+.star {
+  font-size: 44rpx;
+  line-height: 1;
+  padding: 8rpx;
+}
+
+.star-active {
+  color: var(--danger-color);
+}
+
+.star-difficulty.star-active {
+  color: var(--primary-color);
+}
+
+.star-empty {
+  color: var(--border-color);
+}
+
+.rating-value-text {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  margin-left: 16rpx;
+}
+
+.rating-hint {
+  font-size: 20rpx;
+  color: var(--text-light);
+  margin-top: 8rpx;
+  display: block;
+}

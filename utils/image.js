@@ -162,6 +162,39 @@ function removeImagesSync(paths) {
   (paths || []).forEach(removeImageSync);
 }
 
+// 批量删除图片(可感知失败),云存储删除失败的 fileID 写入 orphan_images 集合供定时清理
+async function removeImagesAsync(paths) {
+  const validPaths = (paths || []).filter(p => typeof p === 'string' && p)
+  const cloudPaths = validPaths.filter(p => p.startsWith('cloud://'))
+  const localPaths = validPaths.filter(p => !p.startsWith('cloud://') && isManagedLocalFile(p))
+  // 本地图片同步删(失败忽略)
+  localPaths.forEach(p => { try { fs.unlinkSync(p); } catch (e) {} })
+  if (cloudPaths.length === 0) return
+  const results = []
+  for (let i = 0; i < cloudPaths.length; i += 50) {
+    const batch = cloudPaths.slice(i, i + 50)
+    const res = await new Promise(resolve => {
+      wx.cloud.deleteFile({
+        fileList: batch,
+        success: resolve,
+        fail: () => resolve({ fileList: batch.map(f => ({ fileID: f, status: -1 })) })
+      })
+    })
+    results.push(...(res.fileList || []))
+  }
+  const failed = results.filter(r => r.status !== 0).map(r => r.fileID)
+  if (failed.length > 0) {
+    try {
+      const dbInstance = wx.cloud.database()
+      await dbInstance.collection('orphan_images').add({
+        data: { fileIDs: failed, createTime: Date.now(), source: 'recipe_delete' }
+      })
+    } catch (e) {
+      console.warn('[image] 记录孤儿图片失败', e)
+    }
+  }
+}
+
 // 收集菜谱中的所有图片文件路径/fileID
 function collectRecipeImages(recipe) {
   const list = [];
@@ -195,6 +228,7 @@ module.exports = {
   removeImage,
   removeImageSync,
   removeImagesSync,
+  removeImagesAsync,
   collectRecipeImages,
   clearAll
 };
