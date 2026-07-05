@@ -1,19 +1,4 @@
 <view class="container">
-  <!-- 1. Add Category Section -->
-  <view class="add-section card">
-    <view class="section-title">添加新分类</view>
-    <view class="form-row flex-row">
-      <input
-        class="form-input flex-1 name-input"
-        placeholder="如：精品炒菜"
-        value="{{newCatName}}"
-        bindinput="onNameInput"
-        placeholder-class="input-placeholder"
-      />
-      <button class="btn-primary btn-add" bindtap="handleAddCategory">添加</button>
-    </view>
-  </view>
-
   <view class="dish-tip">长按 ☰ 拖动菜品可排序或移动；长按 ⠿ 拖动可排序分类</view>
 
   <!-- 2. Categories & Dishes List -->
@@ -99,6 +84,21 @@
       <view class="add-recipe-btn flex-row align-center justify-center" catchtap="handleAddRecipeToCategory" data-catid="{{item.id}}">
         <text class="add-recipe-plus">+</text>
         <text class="add-recipe-text">添加菜品到该分类</text>
+      </view>
+    </view>
+
+    <!-- 1. Add Category Section -->
+    <view class="add-section card">
+      <view class="section-title">添加新分类</view>
+      <view class="form-row flex-row">
+        <input
+          class="form-input flex-1 name-input"
+          placeholder="如：精品炒菜"
+          value="{{newCatName}}"
+          bindinput="onNameInput"
+          placeholder-class="input-placeholder"
+        />
+        <button class="btn-primary btn-add" bindtap="handleAddCategory">添加</button>
       </view>
     </view>
 

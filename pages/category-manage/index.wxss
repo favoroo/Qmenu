@@ -84,7 +84,7 @@
 }
 
 .dish-scroll {
-  height: calc(100vh - 350rpx);
+  height: calc(100vh - 120rpx);
 }
 
 .dish-category-card {

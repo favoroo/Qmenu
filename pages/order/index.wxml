@@ -57,9 +57,9 @@
 
   <!-- Tab Bar -->
   <view class="tab-bar flex-row">
-    <view class="tab-item {{activeTab === 'kitchen' ? 'active' : ''}}" bindtap="onTabChange" data-tab="kitchen">厨房订单</view>
-    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine">我下的订单</view>
-    <view class="tab-item {{activeTab === 'cooked' ? 'active' : ''}}" bindtap="onTabChange" data-tab="cooked">我完成的订单</view>
+    <view class="tab-item {{activeTab === 'kitchen' ? 'active' : ''}}" bindtap="onTabChange" data-tab="kitchen" hover-class="tab-item-hover" hover-stay-time="70">厨房订单</view>
+    <view class="tab-item {{activeTab === 'mine' ? 'active' : ''}}" bindtap="onTabChange" data-tab="mine" hover-class="tab-item-hover" hover-stay-time="70">我的订单</view>
+    <view class="tab-item {{activeTab === 'cooked' ? 'active' : ''}}" bindtap="onTabChange" data-tab="cooked" hover-class="tab-item-hover" hover-stay-time="70">我完成的订单</view>
   </view>
 
   <!-- Subscribe Banner (kitchen tab only) -->
@@ -207,7 +207,7 @@
   <!-- Empty State -->
   <view class="empty-orders flex-col align-center justify-center" wx:else>
     <icon type="warn" size="64" color="#cbd5e0" style="margin-bottom: 30rpx;"></icon>
-    <view class="empty-title">{{activeTab === 'mine' ? '暂无我下的订单' : (activeTab === 'cooked' ? '暂无我完成的订单' : '厨房暂无订单')}}</view>
+    <view class="empty-title">{{activeTab === 'mine' ? '暂无我的订单' : (activeTab === 'cooked' ? '暂无我完成的订单' : '厨房暂无订单')}}</view>
     <view class="empty-subtitle">{{activeTab === 'mine' ? '快去厨房挑选心仪的美味吧！' : (activeTab === 'cooked' ? '等待群友指派你为厨师后这里会显示' : '等待群友下单后这里会显示订单')}}</view>
     <button class="btn-primary margin-top-lg" bindtap="goToKitchen" wx:if="{{activeTab === 'mine'}}">去厨房逛逛</button>
   </view>
