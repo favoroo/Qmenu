@@ -1,7 +1,52 @@
 {
   "description": "微信小程序项目配置文件",
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": ".git"
+      },
+      {
+        "type": "folder",
+        "value": ".agents"
+      },
+      {
+        "type": "folder",
+        "value": ".trae"
+      },
+      {
+        "type": "folder",
+        "value": ".uploads"
+      },
+      {
+        "type": "folder",
+        "value": "cloudfunctions"
+      },
+      {
+        "type": "file",
+        "value": ".DS_Store"
+      },
+      {
+        "type": "file",
+        "value": "README.md"
+      },
+      {
+        "type": "file",
+        "value": "skills-lock.json"
+      },
+      {
+        "type": "folder",
+        "value": "pages/discover"
+      },
+      {
+        "type": "file",
+        "value": "assets/tabbar/discover_active.png"
+      },
+      {
+        "type": "file",
+        "value": "assets/tabbar/discover_normal.png"
+      }
+    ],
     "include": []
   },
   "setting": {
@@ -11,7 +56,7 @@
     "postcss": true,
     "minified": true,
     "newFeature": true,
-    "coverView": true,
+    "coverView": false,
     "nodeModules": false,
     "autoAudits": false,
     "showShadowRootInWxmlPanel": true,
@@ -25,8 +70,8 @@
       "outputPath": ""
     },
     "compileWorklet": false,
-    "uglifyFileName": false,
-    "uploadWithSourceMap": true,
+    "uglifyFileName": true,
+    "uploadWithSourceMap": false,
     "packNpmManually": false,
     "packNpmRelationList": [],
     "minifyWXSS": true,
@@ -34,8 +79,8 @@
     "localPlugins": false,
     "disableUseStrict": false,
     "condition": false,
-    "swc": false,
-    "disableSWC": true
+    "swc": true,
+    "disableSWC": false
   },
   "compileType": "miniprogram",
   "libVersion": "2.30.0",

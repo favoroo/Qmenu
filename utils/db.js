@@ -241,6 +241,7 @@ const db = {
           data: {
             id: rec.id,
             groupId: gid,
+            name: rec.name,
             categoryId: rec.categoryId,
             price: rec.price,
             image: rec.image,
@@ -371,7 +372,7 @@ const db = {
       groupId: currentGroupId,
       name: recipe.name,
       categoryId: recipe.categoryId || 'cat_default',
-      price: parseFloat(recipe.price) || 0,
+      price: recipe.price !== undefined && recipe.price !== null && recipe.price !== '' ? (isNaN(parseFloat(recipe.price)) ? 0 : parseFloat(recipe.price)) : 0,
       image: recipe.image || '/assets/images/default_food.png',
       desc: recipe.desc || '',
       status: 1,
@@ -404,7 +405,7 @@ const db = {
       const newRec = {
         ...old,
         ...updated,
-        price: updated.price !== undefined ? (parseFloat(updated.price) || 0) : old.price,
+        price: updated.price !== undefined && updated.price !== null && updated.price !== '' ? (isNaN(parseFloat(updated.price)) ? 0 : parseFloat(updated.price)) : old.price,
         hasMaterialStep: updated.hasMaterialStep !== undefined ? !!updated.hasMaterialStep : old.hasMaterialStep,
         materials: updated.materials !== undefined ? updated.materials : old.materials,
         materialsPublic: updated.materialsPublic !== undefined ? (updated.materialsPublic !== false) : old.materialsPublic,

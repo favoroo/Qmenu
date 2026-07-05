@@ -367,13 +367,17 @@ Page({
       return;
     }
 
-    const priceNum = parseFloat(price);
-    if (isNaN(priceNum) || priceNum <= 0) {
-      wx.showToast({
-        title: '请输入有效价格',
-        icon: 'none'
-      });
-      return;
+    const priceTrimmed = (price || '').trim();
+    let priceNum = 0;
+    if (priceTrimmed !== '') {
+      priceNum = parseFloat(priceTrimmed);
+      if (isNaN(priceNum) || priceNum < 0) {
+        wx.showToast({
+          title: '请输入有效价格',
+          icon: 'none'
+        });
+        return;
+      }
     }
 
     if (categories.length === 0) {

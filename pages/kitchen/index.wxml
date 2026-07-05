@@ -1,6 +1,6 @@
 <view class="container">
   <!-- Group Selector Header -->
-  <view class="group-bar flex-row align-center">
+  <view class="group-bar flex-row align-center" wx:if="{{groupsList.length > 1}}">
     <picker bindchange="onGroupChange" value="{{groupIndex}}" range="{{groupsList}}" range-key="name" class="group-picker-wrapper">
       <view class="group-picker flex-row align-center">
         <text class="group-name">{{currentGroup.name || '未加入群组'}}</text>
@@ -71,56 +71,63 @@
     </scroll-view>
 
     <!-- Right Recipe Scroll -->
-    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation>
-      <view class="category-title-header">{{activeCategoryName || '默认分类'}}</view>
-      
-      <view class="recipes-container" wx:if="{{filteredRecipes.length > 0}}">
-        <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{filteredRecipes}}" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
-          <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
-          <view class="recipe-info flex-1 flex-col justify-between">
-            <view>
-              <view class="recipe-name flex-row align-center justify-between">
-                <text>{{item.name}}</text>
-                <text class="recipe-creator" wx:if="{{item.creatorName}}">By {{item.creatorName}}</text>
+    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation scroll-into-view="{{scrollIntoViewId}}" bindscroll="onRecipeScroll">
+      <block wx:for="{{groupedRecipes}}" wx:for-item="group" wx:key="categoryId">
+        <view class="category-title-header" id="cat-{{group.categoryId}}">{{group.categoryName}}</view>
+        
+        <view class="recipes-container" wx:if="{{group.recipes.length > 0}}">
+          <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{group.recipes}}" wx:for-item="item" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
+            <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+            <view class="recipe-info flex-1 flex-col justify-between">
+              <view>
+                <view class="recipe-name flex-row align-center justify-between">
+                  <text>{{item.name}}</text>
+                  <text class="recipe-creator" wx:if="{{item.creatorName}}">By {{item.creatorName}}</text>
+                </view>
+                <view class="recipe-desc text-ellipsis-2">{{item.desc || '主人很懒，还没写这道菜的描述~'}}</view>
               </view>
-              <view class="recipe-desc text-ellipsis-2">{{item.desc || '主人很懒，还没写这道菜的描述~'}}</view>
-            </view>
-            <view class="recipe-bottom flex-row justify-between align-center">
-              <view class="recipe-price">
-                <text class="price-symbol">¥</text>
-                <text class="price-num">{{item.price}}</text>
-              </view>
-              <!-- Add to Cart / Quantity adjust buttons -->
-              <view class="quantity-controller flex-row align-center">
-                <view 
-                  class="minus-btn" 
-                  wx:if="{{cart[item.id]}}" 
-                  catchtap="onSubtractCart" 
-                  data-id="{{item.id}}"
-                ></view>
-                <text class="quantity-num" wx:if="{{cart[item.id]}}">{{cart[item.id].quantity}}</text>
-                <view 
-                  class="plus-btn" 
-                  catchtap="onAddCart" 
-                  data-item="{{item}}"
-                ></view>
+              <view class="recipe-bottom flex-row justify-between align-center">
+                <view class="recipe-price">
+                  <text class="price-symbol">¥</text>
+                  <text class="price-num">{{item.price}}</text>
+                </view>
+                <!-- Add to Cart / Quantity adjust buttons -->
+                <view class="quantity-controller flex-row align-center">
+                  <view 
+                    class="minus-btn" 
+                    wx:if="{{cart[item.id]}}" 
+                    catchtap="onSubtractCart" 
+                    data-id="{{item.id}}"
+                  ></view>
+                  <text class="quantity-num" wx:if="{{cart[item.id]}}">{{cart[item.id].quantity}}</text>
+                  <view 
+                    class="plus-btn" 
+                    catchtap="onAddCart" 
+                    data-item="{{item}}"
+                  ></view>
+                </view>
               </view>
             </view>
           </view>
         </view>
-        
-        <!-- Add Recipe Button at the bottom of the recipe list -->
-        <view class="bottom-add-recipe-wrapper flex-row justify-center" wx:if="{{isAdmin}}">
-          <view class="btn-add-recipe-bottom flex-row align-center justify-center" bindtap="goRecipeAdd">
-            <text class="add-icon">+</text> 添加菜谱
-          </view>
+
+        <!-- Empty category hint -->
+        <view class="empty-category" wx:else>
+          <text class="empty-category-text">该分类暂无菜品</text>
+        </view>
+      </block>
+      
+      <!-- Add Recipe Button at the bottom of the recipe list -->
+      <view class="bottom-add-recipe-wrapper flex-row justify-center" wx:if="{{isAdmin}}">
+        <view class="btn-add-recipe-bottom flex-row align-center justify-center" bindtap="goRecipeAdd">
+          <text class="add-icon">+</text> 添加菜谱
         </view>
       </view>
 
-      <!-- Empty State -->
-      <view class="empty-state flex-col align-center justify-center" wx:else>
+      <!-- Global Empty State -->
+      <view class="empty-state flex-col align-center justify-center" wx:if="{{filteredRecipes.length === 0 && !loading}}">
         <icon type="search" size="48" color="#cbd5e0"></icon>
-        <view class="empty-text">该分类下没有符合条件的菜谱哦</view>
+        <view class="empty-text">{{searchQuery ? '没有找到符合条件的菜谱哦' : '暂无菜谱'}}</view>
         <button class="btn-secondary margin-top-md" bindtap="goRecipeAdd" wx:if="{{isAdmin}}">添加一道菜</button>
       </view>
       <view style="height: 160rpx;"></view> <!-- Bottom spacer -->
@@ -205,6 +212,28 @@
       </view>
     </view>
 
+    <!-- Category filter -->
+    <view class="random-category-section">
+      <view class="random-category-header flex-row align-center justify-between">
+        <text class="selector-label">选择分类：</text>
+        <view class="random-category-toggle {{isRolling ? 'disabled' : ''}}" bindtap="toggleAllRandomCategories">
+          {{randomAllSelected ? '取消全选' : '全选'}}
+        </view>
+      </view>
+      <view class="random-category-chips flex-row flex-wrap">
+        <view 
+          class="random-category-chip {{item.selected ? 'active' : ''}} {{isRolling ? 'disabled' : ''}}" 
+          wx:for="{{randomCategoryList}}" 
+          wx:key="id"
+          bindtap="toggleRandomCategory"
+          data-id="{{item.id}}"
+        >
+          {{item.name}}
+        </view>
+      </view>
+      <view class="random-pool-count">共 {{randomPoolCount}} 个菜品可选</view>
+    </view>
+
     <view class="rolling-box flex-col align-center justify-center">
       <view class="rolling-list {{randomCount > 1 ? 'grid-' + randomCount : 'single-layout'}}">
         <view class="rolling-item flex-col align-center justify-center" wx:for="{{rollingRecipes}}" wx:key="index">
@@ -215,11 +244,11 @@
     </view>
 
     <button 
-      class="btn-roll-trigger {{isRolling ? 'disabled' : ''}}" 
+      class="btn-roll-trigger {{isRolling || randomPoolCount === 0 ? 'disabled' : ''}}" 
       bindtap="startRandomRoll" 
-      disabled="{{isRolling}}"
+      disabled="{{isRolling || randomPoolCount === 0}}"
     >
-      {{isRolling ? '挑选美食中...' : '帮我选 ' + randomCount + ' 个！'}}
+      {{isRolling ? '挑选美食中...' : (randomPoolCount === 0 ? '暂无可选菜品' : '帮我选 ' + randomCount + ' 个！')}}
     </button>
 
     <button 

@@ -10,7 +10,11 @@ Page({
     activeCategoryName: '',
     recipes: [],
     filteredRecipes: [],
+    groupedRecipes: [],
+    scrollIntoViewId: '',
     searchQuery: '',
+    _scrollThrottleTimer: null,
+    _isClickScrolling: false,
     
     // Cart variables
     cart: {},
@@ -27,6 +31,10 @@ Page({
     randomCount: 1,
     rollingRecipes: [],
     randomSelectedRecipes: [],
+    randomSelectedCategoryIds: [],
+    randomCategoryList: [],
+    randomPoolCount: 0,
+    randomAllSelected: true,
     
     // Admin checking
     isAdmin: false,
@@ -51,6 +59,7 @@ Page({
     // Animation gating
     animReady: false,
     badgeBump: false,
+    hasRendered: false,
 
     // Loading state
     loading: true
@@ -88,6 +97,8 @@ Page({
   },
 
   async onShow() {
+    const firstRender = !this.data.hasRendered;
+
     // 阶段1：瞬时渲染本地缓存（不 await 任何网络）
     const lastGroupId = db.getLastGroupId();
     if (lastGroupId) {
@@ -97,15 +108,18 @@ Page({
       this.loadData(); // 同步从内存读，立即渲染
     }
 
+    // 首次渲染时播放入场动画
+    if (firstRender) {
+      setTimeout(() => {
+        this.setData({ animReady: true, hasRendered: true });
+      }, 50);
+    }
+
     // 阶段2：await 登录 + 后台刷新云端最新数据
     await app.globalData.loginPromise;
     await this.loadGroupsList();
     // Reset cart popup
     this.setData({ showCartPopup: false });
-    
-    // Trigger stagger entrance animation
-    this.setData({ animReady: false });
-    setTimeout(() => this.setData({ animReady: true }), 50);
     
     // 检查新用户并提示完善个人信息
     this.checkNewUserPrompt();
@@ -155,25 +169,21 @@ Page({
         db.setCurrentGroupId(currentGroupId);
         db.setLastGroupId(currentGroupId); // 持久化，下次启动可预加载
 
-        this.setData({
-          groupsList: groups,
-          currentGroup: currentGroup,
-          groupIndex: groupIndex > -1 ? groupIndex : 0
-        });
-
+        let isAdmin = false;
         if (currentGroupId) {
           await db.initCloudData(currentGroupId);
           const myOpenid = app.globalData.userInfo.openid;
-          this.setData({
-            isAdmin: currentGroup && currentGroup.ownerId === myOpenid,
-            loading: false
-          });
-        } else {
-          this.setData({
-            isAdmin: false,
-            loading: false
-          });
+          isAdmin = currentGroup && currentGroup.ownerId === myOpenid;
         }
+
+        // 合并为一次 setData，减少渲染次数
+        this.setData({
+          groupsList: groups,
+          currentGroup: currentGroup,
+          groupIndex: groupIndex > -1 ? groupIndex : 0,
+          isAdmin: isAdmin,
+          loading: false
+        });
       }
     } catch (err) {
       console.error(err);
@@ -189,22 +199,26 @@ Page({
       const newGroupId = selectedGroup._id;
       db.setCurrentGroupId(newGroupId);
       db.setLastGroupId(newGroupId); // 持久化新选择
-      this.setData({
-        groupIndex: index,
-        currentGroup: selectedGroup
-      });
 
       // 先瞬时渲染该群组缓存
       db.loadFromLocalCache(newGroupId);
-      this.loadData();
+      const myOpenid = app.globalData.userInfo.openid;
+      const isAdmin = selectedGroup.ownerId === myOpenid;
+
+      // 合并 setData，切换群组时重新播放入场动画
+      this.setData({
+        groupIndex: index,
+        currentGroup: selectedGroup,
+        isAdmin: isAdmin,
+        animReady: false
+      }, () => {
+        this.loadData();
+        setTimeout(() => this.setData({ animReady: true }), 50);
+      });
 
       // 后台刷新云端
       wx.showLoading({ title: '切换中...' });
       await db.initCloudData(newGroupId);
-      const myOpenid = app.globalData.userInfo.openid;
-      this.setData({
-        isAdmin: selectedGroup.ownerId === myOpenid
-      });
       wx.hideLoading();
       this.loadData();
     }
@@ -247,54 +261,148 @@ Page({
     const cartCount = db.getCartCount();
     const cartTotal = db.getCartTotal();
 
-    this.setData({
-      categories,
-      activeCategoryId,
-      activeCategoryName,
-      recipes,
-      cart,
-      cartCount,
-      cartTotal
-    }, () => {
-      this.filterRecipes();
+    // 简单差异检测：如果分类和菜谱数据未变化，只更新购物车相关数据
+    const dataChanged = this._hasDataChanged(categories, recipes);
+    
+    if (dataChanged) {
+      const groupedRecipes = this.buildGroupedRecipes(categories, recipes, '');
+      this.setData({
+        categories,
+        activeCategoryId,
+        activeCategoryName,
+        recipes,
+        groupedRecipes,
+        cart,
+        cartCount,
+        cartTotal
+      }, () => {
+        this.filterRecipes();
+      });
+    } else {
+      // 只更新购物车数据，避免列表重渲染
+      this.setData({
+        cart,
+        cartCount,
+        cartTotal
+      });
+    }
+  },
+
+  buildGroupedRecipes(categories, recipes, searchQuery) {
+    const activeRecipes = recipes.filter(r => r.status === 1);
+    const query = searchQuery ? searchQuery.trim().toLowerCase() : '';
+    
+    return categories.map(cat => {
+      let catRecipes = activeRecipes.filter(r => r.categoryId === cat.id);
+      if (query) {
+        catRecipes = catRecipes.filter(r => 
+          r.name.toLowerCase().includes(query) || 
+          (r.desc && r.desc.toLowerCase().includes(query))
+        );
+      }
+      return {
+        categoryId: cat.id,
+        categoryName: cat.name,
+        recipes: catRecipes
+      };
     });
   },
 
-  // Filter recipes by Category and Search Query
+  _hasDataChanged(newCategories, newRecipes) {
+    const oldCategories = this.data.categories;
+    const oldRecipes = this.data.recipes;
+
+    if (oldCategories.length !== newCategories.length) return true;
+    if (oldRecipes.length !== newRecipes.length) return true;
+
+    if (newCategories.length > 0) {
+      if (oldCategories[0].id !== newCategories[0].id) return true;
+      if (oldCategories[oldCategories.length - 1].id !== newCategories[newCategories.length - 1].id) return true;
+    }
+
+    if (newRecipes.length > 0) {
+      if (oldRecipes[0].id !== newRecipes[0].id) return true;
+      if (oldRecipes[oldRecipes.length - 1].id !== newRecipes[newRecipes.length - 1].id) return true;
+    }
+
+    return false;
+  },
+
+  // Filter recipes by Search Query (grouped by category)
   filterRecipes() {
-    const { recipes, activeCategoryId, searchQuery } = this.data;
-    let filtered = recipes.filter(r => r.status === 1); // Only active ones
-
-    // Filter by category
-    if (activeCategoryId) {
-      filtered = filtered.filter(r => r.categoryId === activeCategoryId);
-    }
-
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.trim().toLowerCase();
-      filtered = filtered.filter(r => 
-        r.name.toLowerCase().includes(query) || 
-        (r.desc && r.desc.toLowerCase().includes(query))
-      );
-    }
+    const { recipes, categories, searchQuery } = this.data;
+    const groupedRecipes = this.buildGroupedRecipes(categories, recipes, searchQuery);
+    const filtered = groupedRecipes.reduce((acc, g) => acc.concat(g.recipes), []);
 
     this.setData({
+      groupedRecipes,
       filteredRecipes: filtered
     });
   },
 
-  // Category Selection
+  // Category Selection - scroll to category section
   selectCategory(e) {
     const categoryId = e.currentTarget.dataset.id;
     const activeCategory = this.data.categories.find(c => c.id === categoryId);
     const activeCategoryName = activeCategory ? activeCategory.name : '默认分类';
+    
     this.setData({
       activeCategoryId: categoryId,
       activeCategoryName,
-      searchQuery: '' // Clear search when category changes
+      scrollIntoViewId: `cat-${categoryId}`,
+      _isClickScrolling: true
     }, () => {
-      this.filterRecipes();
+      setTimeout(() => {
+        this.setData({ _isClickScrolling: false });
+      }, 500);
+    });
+  },
+
+  // Right scroll listener - sync left category highlight
+  onRecipeScroll(e) {
+    if (this.data._isClickScrolling) return;
+    
+    if (this.data._scrollThrottleTimer) {
+      clearTimeout(this.data._scrollThrottleTimer);
+    }
+    
+    this.data._scrollThrottleTimer = setTimeout(() => {
+      this._updateActiveCategoryByScroll();
+    }, 100);
+  },
+
+  _updateActiveCategoryByScroll() {
+    const query = wx.createSelectorQuery().in(this);
+    query.selectAll('.category-title-header').boundingClientRect();
+    query.select('.recipe-list').boundingClientRect();
+    query.exec((res) => {
+      if (!res || !res[0] || !res[1]) return;
+      
+      const categoryTops = res[0];
+      const listRect = res[1];
+      const listTop = listRect.top;
+      
+      let currentCategoryId = this.data.groupedRecipes[0]?.categoryId || '';
+      
+      for (let i = 0; i < categoryTops.length; i++) {
+        const rect = categoryTops[i];
+        if (rect.top <= listTop + 20) {
+          const group = this.data.groupedRecipes[i];
+          if (group) {
+            currentCategoryId = group.categoryId;
+          }
+        } else {
+          break;
+        }
+      }
+      
+      if (currentCategoryId && currentCategoryId !== this.data.activeCategoryId) {
+        const activeCategory = this.data.categories.find(c => c.id === currentCategoryId);
+        this.setData({
+          activeCategoryId: currentCategoryId,
+          activeCategoryName: activeCategory ? activeCategory.name : ''
+        });
+      }
     });
   },
 
@@ -375,16 +483,46 @@ Page({
   },
 
   // --- Random Selection (Panda Button) ---
-  openRandomModal() {
-    const activeRecipes = this.data.recipes.filter(r => r.status === 1);
-    if (activeRecipes.length === 0) {
-      wx.showToast({
-        title: '厨房还没有准备好的菜谱哦！',
-        icon: 'none'
-      });
-      return;
+  buildRandomCategoryList(selectedIds) {
+    return this.data.categories.map(c => ({
+      ...c,
+      selected: selectedIds.indexOf(c.id) > -1
+    }));
+  },
+
+  syncRandomUI(selectedIds, extraData, callback) {
+    const allIds = this.data.categories.map(c => c.id);
+    const categoryList = this.buildRandomCategoryList(selectedIds);
+    const allSelected = selectedIds.length === allIds.length;
+    const dataToSet = {
+      randomSelectedCategoryIds: selectedIds,
+      randomCategoryList: categoryList,
+      randomAllSelected: allSelected,
+      ...extraData
+    };
+    this.setData(dataToSet, () => {
+      this.updateRandomPoolCount();
+      if (callback) callback();
+    });
+  },
+
+  getRandomPool() {
+    const { recipes, randomSelectedCategoryIds } = this.data;
+    const activeRecipes = recipes.filter(r => r.status === 1);
+    if (!randomSelectedCategoryIds || randomSelectedCategoryIds.length === 0) {
+      return activeRecipes;
     }
-    
+    return activeRecipes.filter(r => randomSelectedCategoryIds.indexOf(r.categoryId) > -1);
+  },
+
+  updateRandomPoolCount() {
+    const pool = this.getRandomPool();
+    this.setData({ randomPoolCount: pool.length });
+    return pool;
+  },
+
+  openRandomModal() {
+    const allCategoryIds = this.data.categories.map(c => c.id);
     const randomCount = this.data.randomCount || 1;
     const rollingRecipes = [];
     for (let i = 0; i < randomCount; i++) {
@@ -393,7 +531,7 @@ Page({
         image: '/assets/images/default_food.png'
       });
     }
-    
+
     this.setData({
       showRandomModal: true,
       randomCount: randomCount,
@@ -403,12 +541,53 @@ Page({
       rollRecipeImage: '/assets/images/default_food.png',
       randomSelectedRecipe: null,
       isRolling: false
+    }, () => {
+      this.syncRandomUI(allCategoryIds, {});
     });
   },
 
   closeRandomModal() {
     this.setData({
       showRandomModal: false
+    });
+  },
+
+  toggleRandomCategory(e) {
+    if (this.data.isRolling) return;
+    const categoryId = e.currentTarget.dataset.id;
+    let selected = [...this.data.randomSelectedCategoryIds];
+    const idx = selected.indexOf(categoryId);
+    if (idx > -1) {
+      if (selected.length <= 1) {
+        wx.showToast({ title: '至少选择一个分类', icon: 'none' });
+        return;
+      }
+      selected.splice(idx, 1);
+    } else {
+      selected.push(categoryId);
+    }
+    this.syncRandomUI(selected, {
+      randomSelectedRecipes: [],
+      rollingRecipes: this.data.rollingRecipes.map(() => ({
+        name: '今天吃什么？',
+        image: '/assets/images/default_food.png'
+      })),
+      randomSelectedRecipe: null
+    });
+  },
+
+  toggleAllRandomCategories() {
+    if (this.data.isRolling) return;
+    const allIds = this.data.categories.map(c => c.id);
+    const isAllSelected = this.data.randomSelectedCategoryIds.length === allIds.length;
+    const newSelected = isAllSelected ? [allIds[0]] : allIds;
+    this.syncRandomUI(newSelected, {
+      randomSelectedRecipes: [],
+      rollingRecipes: this.data.rollingRecipes.map(() => ({
+        name: '今天吃什么？',
+        image: '/assets/images/default_food.png'
+      })),
+      randomSelectedRecipe: null
     });
   },
 
@@ -437,11 +616,14 @@ Page({
   startRandomRoll() {
     if (this.data.isRolling) return;
     
-    const activeRecipes = this.data.recipes.filter(r => r.status === 1);
-    if (activeRecipes.length === 0) return;
+    const pool = this.getRandomPool();
+    if (pool.length === 0) {
+      wx.showToast({ title: '所选分类下没有可用菜品', icon: 'none' });
+      return;
+    }
 
     const count = this.data.randomCount || 1;
-    const rollCount = Math.min(activeRecipes.length, count);
+    const rollCount = Math.min(pool.length, count);
 
     this.setData({
       isRolling: true,
@@ -452,8 +634,7 @@ Page({
     let counter = 0;
     const maxRolls = 15;
     const interval = setInterval(() => {
-      // Pick unique recipes for each rolling slot
-      const tempShuffled = [...activeRecipes].sort(() => 0.5 - Math.random());
+      const tempShuffled = [...pool].sort(() => 0.5 - Math.random());
       const selectedSlice = tempShuffled.slice(0, rollCount);
       
       const rollingRecipes = selectedSlice.map(r => ({
@@ -478,8 +659,7 @@ Page({
       if (counter >= maxRolls) {
         clearInterval(interval);
         
-        // Final select
-        const finalShuffled = [...activeRecipes].sort(() => 0.5 - Math.random());
+        const finalShuffled = [...pool].sort(() => 0.5 - Math.random());
         const finalSelected = finalShuffled.slice(0, rollCount);
         
         const finalRolling = finalSelected.map(r => ({
