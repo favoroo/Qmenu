@@ -168,6 +168,7 @@
   width: 32rpx;
   height: 40rpx;
   gap: 5rpx;
+  flex-shrink: 0;
 }
 
 .dish-grip-bar {
@@ -177,17 +178,44 @@
   border-radius: 2rpx;
 }
 
+.dish-thumb {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 12rpx;
+  flex-shrink: 0;
+  background-color: var(--bg-light);
+}
+
 .dish-name {
   font-size: 28rpx;
   color: var(--text-main);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dish-price {
   font-size: 28rpx;
   font-weight: bold;
   color: var(--danger-color);
-  margin-right: 16rpx;
+  margin-right: 8rpx;
+  flex-shrink: 0;
+}
+
+.dish-edit-btn {
+  font-size: 22rpx;
+  color: var(--primary-color);
+  background-color: #EFF6FF;
+  border: 1rpx solid rgba(37, 99, 235, 0.2);
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.dish-edit-btn:active {
+  opacity: 0.7;
 }
 
 .dish-delete-btn {
@@ -198,10 +226,76 @@
   padding: 8rpx 20rpx;
   border-radius: 8rpx;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .dish-delete-btn:active {
   opacity: 0.7;
+}
+
+/* Add Recipe to Category Button */
+.add-recipe-btn {
+  margin-top: 20rpx;
+  padding: 20rpx 0;
+  border: 2rpx dashed var(--border-color);
+  border-radius: 12rpx;
+  background-color: #FAFBFC;
+  gap: 8rpx;
+}
+
+.add-recipe-btn:active {
+  background-color: var(--primary-light);
+  border-color: var(--primary-color);
+}
+
+.add-recipe-plus {
+  font-size: 28rpx;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.add-recipe-text {
+  font-size: 26rpx;
+  color: var(--text-sub);
+}
+
+.add-recipe-btn:active .add-recipe-text {
+  color: var(--primary-color);
+}
+
+/* Floating Action Button - Add Recipe */
+.fab-add-recipe {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 20rpx 32rpx;
+  background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+  border-radius: 50rpx;
+  box-shadow: 0 8rpx 24rpx rgba(37, 99, 235, 0.4);
+  z-index: 100;
+}
+
+.fab-add-recipe:active {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 12rpx rgba(37, 99, 235, 0.3);
+}
+
+.fab-plus {
+  font-size: 32rpx;
+  color: #ffffff;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.fab-text {
+  font-size: 28rpx;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .dish-empty {

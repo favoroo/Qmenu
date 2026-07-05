@@ -130,18 +130,18 @@
 .recipe-list {
   height: 100%;
   background-color: #ffffff;
-  padding: 0 32rpx 0 20rpx;
+  padding: 0 0 0 20rpx;
 }
 
 .category-title-header {
   font-size: 28rpx;
   font-weight: bold;
   color: var(--text-main);
-  padding: 24rpx 0 12rpx 0;
+  padding: 24rpx 32rpx 12rpx 0;
 }
 
 .empty-category {
-  padding: 20rpx 0 30rpx 0;
+  padding: 20rpx 32rpx 30rpx 0;
 }
 
 .empty-category-text {
@@ -150,6 +150,7 @@
 }
 
 .recipes-container {
+  padding-right: 32rpx;
   padding-bottom: 40rpx;
 }
 
@@ -284,7 +285,7 @@
 
 /* Empty State */
 .empty-state {
-  padding: 80rpx 40rpx;
+  padding: 80rpx 32rpx 80rpx 12rpx;
   text-align: center;
 }
 
@@ -898,7 +899,7 @@
 
 /* Add Recipe Button at the bottom of recipe list */
 .bottom-add-recipe-wrapper {
-  padding: 30rpx 0;
+  padding: 30rpx 32rpx 30rpx 12rpx;
   width: 100%;
   display: flex;
   justify-content: center;

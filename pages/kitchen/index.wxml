@@ -22,7 +22,7 @@
   </view>
 
   <!-- 当没有加入任何群组时显示空状态引导 -->
-  <view wx:if="{{!currentGroup}}" class="empty-group flex-col align-center justify-center">
+  <view wx:if="{{!currentGroup && !loading}}" class="empty-group flex-col align-center justify-center">
     <view class="empty-group-icon">👥</view>
     <view class="empty-group-title">您当前未加入任何群组</view>
     <view class="empty-group-desc">「Q 菜单」支持多用户协作。您可以创建自己专属的菜单群组，或者输入好友的邀请码加入已有群组。</view>

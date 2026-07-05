@@ -151,6 +151,29 @@ Page({
     });
   },
 
+  // ===== Navigate to Add Recipe (global) =====
+  handleAddRecipe() {
+    wx.navigateTo({
+      url: '/pages/recipe-add/index'
+    });
+  },
+
+  // ===== Navigate to Add Recipe (preselect category) =====
+  handleAddRecipeToCategory(e) {
+    const catId = e.currentTarget.dataset.catid;
+    wx.navigateTo({
+      url: `/pages/recipe-add/index?categoryId=${catId}`
+    });
+  },
+
+  // ===== Navigate to Edit Recipe =====
+  handleEditRecipe(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.navigateTo({
+      url: `/pages/recipe-add/index?id=${id}`
+    });
+  },
+
   // ===== Category Drag Sort =====
   onCategoryLongPress(e) {
     const category = e.currentTarget.dataset.category;

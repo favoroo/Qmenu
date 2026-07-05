@@ -17,7 +17,7 @@
       <view class="menu-item flex-row justify-between align-center" bindtap="goCategoryManage">
         <view class="menu-item-left flex-row align-center">
           <image class="menu-item-icon" src="/assets/images/icon_category.svg"></image>
-          <text>分类管理</text>
+          <text>菜单管理</text>
         </view>
         <view class="arrow-right"></view>
       </view>

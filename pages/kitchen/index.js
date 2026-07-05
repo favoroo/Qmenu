@@ -133,8 +133,22 @@ Page({
     if (lastGroupId) {
       db.setCurrentGroupId(lastGroupId);
       db.loadFromLocalCache(lastGroupId);
-      this.setData({ loading: false });
-      this.loadData(); // 同步从内存读，立即渲染
+      
+      const cachedGroups = db.getCachedGroupsList();
+      const currentGroup = cachedGroups.find(g => g._id === lastGroupId) || null;
+      const groupIndex = cachedGroups.findIndex(g => g._id === lastGroupId);
+      const myOpenid = (app.globalData.userInfo && app.globalData.userInfo.openid) || 
+                       (wx.getStorageSync('userInfo') && wx.getStorageSync('userInfo').openid) || '';
+      const isAdmin = currentGroup && currentGroup.ownerId === myOpenid;
+      
+      this.setData({
+        loading: false,
+        groupsList: cachedGroups,
+        currentGroup: currentGroup,
+        groupIndex: groupIndex > -1 ? groupIndex : 0,
+        isAdmin: isAdmin
+      });
+      this.loadData();
     }
 
     // 首次渲染时播放入场动画
@@ -271,6 +285,26 @@ Page({
       wx.hideTabBar({ animate: false });
     } catch (e) {
       console.warn('hideTabBar in runSplashWorkflow failed', e);
+    }
+
+    const lastGroupId = db.getLastGroupId();
+    if (lastGroupId) {
+      db.setCurrentGroupId(lastGroupId);
+      db.loadFromLocalCache(lastGroupId);
+      const cachedGroups = db.getCachedGroupsList();
+      const currentGroup = cachedGroups.find(g => g._id === lastGroupId) || null;
+      const groupIndex = cachedGroups.findIndex(g => g._id === lastGroupId);
+      const userInfo = wx.getStorageSync('userInfo') || {};
+      const isAdmin = currentGroup && currentGroup.ownerId === (userInfo.openid || '');
+      
+      this.setData({
+        groupsList: cachedGroups,
+        currentGroup: currentGroup,
+        groupIndex: groupIndex > -1 ? groupIndex : 0,
+        isAdmin: isAdmin,
+        loading: false
+      });
+      this.loadData();
     }
 
     const timeoutPromise = new Promise(resolve => setTimeout(resolve, 6000));
