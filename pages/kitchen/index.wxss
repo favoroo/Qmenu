@@ -130,7 +130,7 @@
 .recipe-list {
   height: 100%;
   background-color: #ffffff;
-  padding: 0 20rpx;
+  padding: 0 32rpx 0 20rpx;
 }
 
 .category-title-header {
@@ -138,10 +138,6 @@
   font-weight: bold;
   color: var(--text-main);
   padding: 24rpx 0 12rpx 0;
-  position: sticky;
-  top: 0;
-  background-color: #ffffff;
-  z-index: 2;
 }
 
 .empty-category {

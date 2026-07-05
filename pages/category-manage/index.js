@@ -135,12 +135,17 @@ Page({
       title: '删除菜品',
       content: `确定要删除菜品「${name}」吗？此操作不可恢复。`,
       confirmColor: '#E07A5F',
-      success(res) {
+      async success(res) {
         if (res.confirm) {
-          db.deleteRecipe(id);
-          self.loadData();
-          wx.showToast({ title: '已删除', icon: 'success' });
-          wx.vibrateShort();
+          try {
+            await db.deleteRecipe(id);
+            self.loadData();
+            wx.showToast({ title: '已删除', icon: 'success' });
+            wx.vibrateShort();
+          } catch (err) {
+            console.error('删除菜谱失败', err);
+            wx.showToast({ title: '删除失败，请重试', icon: 'none' });
+          }
         }
       }
     });

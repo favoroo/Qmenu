@@ -31,7 +31,7 @@ exports.main = async (event, context) => {
       // 创建新用户，设置默认昵称与头像
       const defaultUser = {
         openid: openid,
-        nickName: '吃货_' + openid.substring(openid.length - 4),
+        nickName: '吃货_' + Math.floor(1000 + Math.random() * 9000),
         avatarUrl: '/assets/images/default_avatar.png', // 默认头像
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()

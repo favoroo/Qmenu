@@ -101,51 +101,61 @@ Page({
     this.setData({ isSubmitting: true });
 
     const chef = selectedChef || null;
-    // Call DB helper to write order
-    const order = db.createOrder(remark, isFromShare, sharerName, chef);
 
-    if (order) {
-      const app = getApp();
-      const me = app.globalData.userInfo;
-      const needNotify = chef && chef.openid && chef.openid !== me.openid;
+    try {
+      // Call DB helper to write order (await 确保订单写入云端后再通知厨师)
+      const order = await db.createOrder(remark, isFromShare, sharerName, chef);
 
-      if (needNotify) {
-        try {
-          const r = await subscribe.callNotifyChef(order);
-          if (r.sent) {
-            wx.showToast({ title: '下单成功，已通知厨师', icon: 'success', duration: 1500 });
-          } else {
-            wx.showToast({ title: '已下单，厨师未开启提醒', icon: 'none', duration: 2000 });
+      if (order) {
+        const app = getApp();
+        const me = app.globalData.userInfo;
+        const needNotify = chef && chef.openid && chef.openid !== me.openid;
+
+        if (needNotify) {
+          try {
+            const r = await subscribe.callNotifyChef(order);
+            if (r.sent) {
+              wx.showToast({ title: '下单成功，已通知厨师', icon: 'success', duration: 1500 });
+            } else {
+              wx.showToast({ title: '已下单，厨师未开启提醒', icon: 'none', duration: 2000 });
+            }
+          } catch (e) {
+            wx.showToast({ title: '已下单，通知发送失败', icon: 'none' });
           }
-        } catch (e) {
-          wx.showToast({ title: '已下单，通知发送失败', icon: 'none' });
+        } else {
+          wx.showToast({
+            title: '下单成功！正在制作',
+            icon: 'success',
+            duration: 1500
+          });
         }
+
+        wx.vibrateLong();
+
+        // Clear the local cart state in page
+        this.setData({
+          cartItems: [],
+          cartTotal: 0
+        });
+
+        // Navigate to historical orders tab
+        setTimeout(() => {
+          wx.switchTab({
+            url: '/pages/order/index'
+          });
+        }, 1500);
       } else {
+        this.setData({ isSubmitting: false });
         wx.showToast({
-          title: '下单成功！正在制作',
-          icon: 'success',
-          duration: 1500
+          title: '下单失败，请重试',
+          icon: 'none'
         });
       }
-
-      wx.vibrateLong();
-
-      // Clear the local cart state in page
-      this.setData({
-        cartItems: [],
-        cartTotal: 0
-      });
-
-      // Navigate to historical orders tab
-      setTimeout(() => {
-        wx.switchTab({
-          url: '/pages/order/index'
-        });
-      }, 1500);
-    } else {
+    } catch (err) {
+      console.error('下单失败', err);
       this.setData({ isSubmitting: false });
       wx.showToast({
-        title: '下单失败，请重试',
+        title: '下单失败，请检查网络后重试',
         icon: 'none'
       });
     }

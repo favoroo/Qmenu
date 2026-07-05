@@ -71,7 +71,7 @@
     </scroll-view>
 
     <!-- Right Recipe Scroll -->
-    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation scroll-into-view="{{scrollIntoViewId}}" bindscroll="onRecipeScroll">
+    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation scroll-top="{{scrollTop}}" bindscroll="onRecipeScroll">
       <block wx:for="{{groupedRecipes}}" wx:for-item="group" wx:key="categoryId">
         <view class="category-title-header" id="cat-{{group.categoryId}}">{{group.categoryName}}</view>
         

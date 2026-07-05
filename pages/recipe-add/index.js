@@ -427,7 +427,7 @@ Page({
         // EDIT MODE: 记录旧图，更新后清理被替换的旧图（防孤儿堆积）
         const oldRecipe = db.getRecipes().find(r => r.id === recipeId) || null;
         recipeData.id = recipeId;
-        db.updateRecipe(recipeData);
+        await db.updateRecipe(recipeData);
         if (oldRecipe) {
           const oldImgs = imageUtil.collectRecipeImages(oldRecipe);
           const newImgs = imageUtil.collectRecipeImages(recipeData);
@@ -441,7 +441,7 @@ Page({
         });
       } else {
         // ADD MODE: Create new recipe
-        db.addRecipe(recipeData);
+        await db.addRecipe(recipeData);
 
         wx.showToast({
           title: '发布菜谱成功！',
@@ -455,9 +455,9 @@ Page({
         wx.navigateBack();
       }, 1500);
     } catch (err) {
-      console.error('图片处理失败', err);
+      console.error('保存菜谱失败', err);
       wx.showToast({
-        title: err && err.message ? err.message : '图片处理失败，请重试',
+        title: err && err.message ? err.message : '保存失败，请重试',
         icon: 'none'
       });
       // 异常时复位按钮，允许重试（成功路径靠 navigateBack 离开，保持禁用防重复提交）
@@ -469,23 +469,31 @@ Page({
   handleDeleteRecipe() {
     const id = this.data.recipeId;
     const self = this;
-    
+
     wx.showModal({
       title: '删除菜品',
       content: `确定要永久删除菜品「${this.data.name}」吗？这也会将其从购物车中移除。`,
       confirmColor: '#ff4d4f',
-      success(res) {
+      async success(res) {
         if (res.confirm) {
-          db.deleteRecipe(id);
-          wx.showToast({
-            title: '删除成功',
-            icon: 'success',
-            duration: 1500
-          });
-          
-          setTimeout(() => {
-            wx.navigateBack();
-          }, 1500);
+          try {
+            await db.deleteRecipe(id);
+            wx.showToast({
+              title: '删除成功',
+              icon: 'success',
+              duration: 1500
+            });
+
+            setTimeout(() => {
+              wx.navigateBack();
+            }, 1500);
+          } catch (err) {
+            console.error('删除菜谱失败', err);
+            wx.showToast({
+              title: '删除失败，请重试',
+              icon: 'none'
+            });
+          }
         }
       }
     });

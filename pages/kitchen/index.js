@@ -11,7 +11,8 @@ Page({
     recipes: [],
     filteredRecipes: [],
     groupedRecipes: [],
-    scrollIntoViewId: '',
+    scrollTop: 0,
+    recipeScrollTop: 0,
     searchQuery: '',
     _scrollThrottleTimer: null,
     _isClickScrolling: false,
@@ -129,7 +130,9 @@ Page({
     const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
     const isDefaultNick = userInfo && userInfo.nickName && userInfo.nickName.startsWith('吃货_');
     const isDefaultAvatar = userInfo && userInfo.avatarUrl && 
-      (userInfo.avatarUrl.includes('default_avatar.png') || userInfo.avatarUrl.includes('logo.png'));
+      (userInfo.avatarUrl.includes('default_avatar.png') || 
+       userInfo.avatarUrl.includes('logo.png') || 
+       userInfo.avatarUrl.includes('logo.jpg'));
     const isNew = app.globalData.isNewUser || isDefaultNick || isDefaultAvatar;
 
     if (isNew && !app.globalData.hasPromptedProfile) {
@@ -217,7 +220,7 @@ Page({
       });
 
       // 后台刷新云端
-      wx.showLoading({ title: '切换中...' });
+      wx.showLoading({ title: '切换中...', mask: true });
       await db.initCloudData(newGroupId);
       wx.hideLoading();
       this.loadData();
@@ -230,7 +233,11 @@ Page({
     });
   },
 
-  onPullDownRefresh() {
+  async onPullDownRefresh() {
+    const currentGroupId = db.getCurrentGroupId();
+    if (currentGroupId) {
+      await db.initCloudData(currentGroupId);
+    }
     this.loadData();
     wx.stopPullDownRefresh();
     wx.showToast({
@@ -345,13 +352,38 @@ Page({
     const categoryId = e.currentTarget.dataset.id;
     const activeCategory = this.data.categories.find(c => c.id === categoryId);
     const activeCategoryName = activeCategory ? activeCategory.name : '默认分类';
-    
+
     this.setData({
       activeCategoryId: categoryId,
       activeCategoryName,
-      scrollIntoViewId: `cat-${categoryId}`,
       _isClickScrolling: true
-    }, () => {
+    });
+
+    // 查询目标元素相对于 scroll-view 的位置
+    const query = wx.createSelectorQuery().in(this);
+    query.select(`#cat-${categoryId}`).boundingClientRect();
+    query.select('.recipe-list').boundingClientRect();
+    query.exec((res) => {
+      if (!res || !res[0] || !res[1]) {
+        this.setData({ _isClickScrolling: false });
+        return;
+      }
+      const targetRect = res[0];
+      const listRect = res[1];
+      // 计算目标元素相对于 scroll-view 可视区域顶部的偏移
+      const offset = targetRect.top - listRect.top;
+      // 目标 scrollTop = 当前 scrollTop + 偏移
+      const targetScrollTop = this.data.recipeScrollTop + offset;
+
+      // 先设为偏移 1px 的值再设为目标值，确保重复点击同一分类也能触发
+      this.setData({
+        scrollTop: targetScrollTop + 1
+      }, () => {
+        this.setData({
+          scrollTop: targetScrollTop
+        });
+      });
+
       setTimeout(() => {
         this.setData({ _isClickScrolling: false });
       }, 500);
@@ -360,12 +392,15 @@ Page({
 
   // Right scroll listener - sync left category highlight
   onRecipeScroll(e) {
+    // 记录当前 scroll-view 的实际滚动位置（不触发渲染，仅存储）
+    this.data.recipeScrollTop = e.detail.scrollTop;
+
     if (this.data._isClickScrolling) return;
-    
+
     if (this.data._scrollThrottleTimer) {
       clearTimeout(this.data._scrollThrottleTimer);
     }
-    
+
     this.data._scrollThrottleTimer = setTimeout(() => {
       this._updateActiveCategoryByScroll();
     }, 100);
@@ -777,20 +812,25 @@ Page({
       title: '确认移动',
       content: `将「${recipe.name}」移动到「${targetName}」？`,
       confirmColor: '#2563EB',
-      success(modalRes) {
+      async success(modalRes) {
         if (modalRes.confirm) {
-          db.updateRecipe({
-            id: recipe.id,
-            categoryId: targetCategoryId
-          });
+          try {
+            await db.updateRecipe({
+              id: recipe.id,
+              categoryId: targetCategoryId
+            });
 
-          self.closeMoveCategoryModal();
-          self.loadData();
+            self.closeMoveCategoryModal();
+            self.loadData();
 
-          wx.showToast({
-            title: `已移至「${targetName}」`,
-            icon: 'success'
-          });
+            wx.showToast({
+              title: `已移至「${targetName}」`,
+              icon: 'success'
+            });
+          } catch (err) {
+            console.error('移动菜谱失败', err);
+            wx.showToast({ title: '移动失败，请重试', icon: 'none' });
+          }
         }
       }
     });

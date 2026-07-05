@@ -31,7 +31,7 @@ exports.main = async (event, context) => {
       touser: chefId,
       templateId: TEMPLATE_ID,
       page: 'pages/order/index?tab=kitchen',
-      miniprogramState: 'developer', // 开发版 developer / 体验版 trial / 正式版 formal
+      miniprogramState: 'formal', // 开发版 developer / 体验版 trial / 正式版 formal
       lang: 'zh_CN',
       data: {
         thing1: { value: dishSummary },         // 菜品明细（待购物品）

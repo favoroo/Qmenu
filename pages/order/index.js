@@ -14,7 +14,7 @@ Page({
     activeTimerStepIndex: -1,
     timerSecondsLeft: 0,
     formattedTimeLeft: '00:00',
-    isAdmin: true
+    isAdmin: false
   },
 
   onLoad(options) {
@@ -181,30 +181,31 @@ Page({
     const orderId = e.currentTarget.dataset.id;
     const orders = this.data.orders;
     const order = orders.find(o => o.id === orderId);
-    
+
     if (order) {
-      db.clearCart(); // Clear old items
-      
-      // Load all current recipes to verify status and details
+      // 构建新购物车对象，一次性全量写入，避免 clearCart + addToCart 的并发竞态
       const recipes = db.getRecipes();
-      
+      const newCart = {};
+
       order.items.forEach(item => {
-        // Find matching recipe in database
         const recipe = recipes.find(r => r.id === item.recipeId);
         if (recipe && recipe.status === 1) {
-          // Add to cart with its quantity
-          for (let i = 0; i < item.quantity; i++) {
-            db.addToCart(recipe);
+          if (newCart[recipe.id]) {
+            newCart[recipe.id].quantity += item.quantity;
+          } else {
+            newCart[recipe.id] = { recipe, quantity: item.quantity };
           }
         }
       });
-      
+
+      db.saveCart(newCart);
+
       wx.showToast({
         title: '已添加至购物车',
         icon: 'success',
         duration: 1000
       });
-      
+
       setTimeout(() => {
         wx.switchTab({
           url: '/pages/kitchen/index'

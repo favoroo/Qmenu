@@ -5,7 +5,8 @@ let cloudCache = {
   categories: [],
   recipes: [],
   orders: [],
-  cart: {}
+  cart: {},
+  cartDocId: '' // 缓存购物车文档 _id，避免每次操作都查询
 };
 
 let currentGroupId = '';
@@ -130,6 +131,7 @@ const db = {
         cloudCache.recipes = cached.recipes || [];
         cloudCache.orders = cached.orders || [];
         cloudCache.cart = cached.cart || {};
+        cloudCache.cartDocId = ''; // 重置，由 _fetchCart 或 _ensureCartDocId 重新获取
         currentGroupId = groupId;
         return true;
       }
@@ -183,6 +185,7 @@ const db = {
       cloudCache.recipes = [];
       cloudCache.orders = [];
       cloudCache.cart = {};
+      cloudCache.cartDocId = '';
       return;
     }
 
@@ -274,14 +277,16 @@ const db = {
   async _fetchCart(dbInstance, gid) {
     let cartRes = await dbInstance.collection('cart').where({ groupId: gid }).limit(1).get();
     if (cartRes.data.length > 0) {
+      cloudCache.cartDocId = cartRes.data[0]._id;
       return cartRes.data[0].items || {};
     } else {
-      await dbInstance.collection('cart').add({
+      const addRes = await dbInstance.collection('cart').add({
         data: {
           groupId: gid,
           items: {}
         }
       });
+      cloudCache.cartDocId = addRes._id;
       return {};
     }
   },
@@ -363,7 +368,7 @@ const db = {
     this.saveToLocalCache(currentGroupId);
   },
 
-  addRecipe(recipe) {
+  async addRecipe(recipe) {
     if (!currentGroupId) return null;
     const list = this.getRecipes();
     const userInfo = wx.getStorageSync('userInfo') || {};
@@ -385,19 +390,25 @@ const db = {
       creatorName: userInfo.nickName || '匿名用户'
     };
     list.push(newRecipe);
-
-    const dbInstance = wx.cloud.database();
-    dbInstance.collection('recipes').add({
-      data: newRecipe
-    }).then(res => {
-      newRecipe._id = res.id;
-    });
-
     this.saveToLocalCache(currentGroupId);
-    return newRecipe;
+
+    try {
+      const dbInstance = wx.cloud.database();
+      const res = await dbInstance.collection('recipes').add({
+        data: newRecipe
+      });
+      newRecipe._id = res.id;
+      return newRecipe;
+    } catch (err) {
+      console.error('[db] addRecipe 云端写入失败', err);
+      // 回滚本地缓存
+      cloudCache.recipes = list.filter(r => r.id !== newRecipe.id);
+      this.saveToLocalCache(currentGroupId);
+      throw err;
+    }
   },
 
-  updateRecipe(updated) {
+  async updateRecipe(updated) {
     const list = this.getRecipes();
     const index = list.findIndex(r => r.id === updated.id);
     if (index > -1) {
@@ -417,9 +428,14 @@ const db = {
       if (newRec._id) {
         const dbInstance = wx.cloud.database();
         const { _id, _openid, ...updateData } = newRec;
-        dbInstance.collection('recipes').doc(_id).update({
-          data: updateData
-        });
+        try {
+          await dbInstance.collection('recipes').doc(_id).update({
+            data: updateData
+          });
+        } catch (err) {
+          console.error('[db] updateRecipe 云端更新失败', err);
+          throw err;
+        }
       }
       this.saveToLocalCache(currentGroupId);
       return true;
@@ -427,14 +443,19 @@ const db = {
     return false;
   },
 
-  deleteRecipe(id) {
+  async deleteRecipe(id) {
     const list = this.getRecipes();
     const target = list.find(r => r.id === id);
     if (target) {
       imageUtil.removeImagesSync(imageUtil.collectRecipeImages(target));
       if (target._id) {
         const dbInstance = wx.cloud.database();
-        dbInstance.collection('recipes').doc(target._id).remove();
+        try {
+          await dbInstance.collection('recipes').doc(target._id).remove();
+        } catch (err) {
+          console.error('[db] deleteRecipe 云端删除失败', err);
+          throw err;
+        }
       }
     }
     cloudCache.recipes = list.filter(item => item.id !== id);
@@ -447,18 +468,60 @@ const db = {
     return cloudCache.cart || {};
   },
 
+  // 懒加载获取购物车文档 _id（不存在则创建）
+  async _ensureCartDocId(dbInstance) {
+    if (cloudCache.cartDocId) return cloudCache.cartDocId;
+    const gid = currentGroupId;
+    if (!gid) return null;
+    const cartRes = await dbInstance.collection('cart').where({ groupId: gid }).limit(1).get();
+    if (cartRes.data.length > 0) {
+      cloudCache.cartDocId = cartRes.data[0]._id;
+    } else {
+      const addRes = await dbInstance.collection('cart').add({
+        data: { groupId: gid, items: {} }
+      });
+      cloudCache.cartDocId = addRes._id;
+    }
+    return cloudCache.cartDocId;
+  },
+
+  // 增量更新单个菜品字段（并发安全：不同 recipeId 互不影响）
+  _persistCartItem(recipeId, item) {
+    if (!currentGroupId) return;
+    const dbInstance = wx.cloud.database();
+    this._ensureCartDocId(dbInstance).then(docId => {
+      if (!docId) return;
+      dbInstance.collection('cart').doc(docId).update({
+        data: { [`items.${recipeId}`]: item }
+      }).catch(err => console.error('[db] 购物车增量更新失败', err));
+    }).catch(err => console.error('[db] 获取购物车文档失败', err));
+  },
+
+  // 删除单个菜品字段（并发安全）
+  _removeCartItem(recipeId) {
+    if (!currentGroupId) return;
+    const dbInstance = wx.cloud.database();
+    const _ = dbInstance.command;
+    this._ensureCartDocId(dbInstance).then(docId => {
+      if (!docId) return;
+      dbInstance.collection('cart').doc(docId).update({
+        data: { [`items.${recipeId}`]: _.remove() }
+      }).catch(err => console.error('[db] 购物车字段删除失败', err));
+    }).catch(err => console.error('[db] 获取购物车文档失败', err));
+  },
+
+  // 全量覆盖购物车（用于清空、再来一单等批量替换场景）
   saveCart(cart) {
     if (!currentGroupId) return;
     cloudCache.cart = cart;
     this.saveToLocalCache(currentGroupId);
     const dbInstance = wx.cloud.database();
-    dbInstance.collection('cart').where({ groupId: currentGroupId }).get().then(res => {
-      if (res.data.length > 0) {
-        dbInstance.collection('cart').doc(res.data[0]._id).update({
-          data: { items: cart }
-        });
-      }
-    });
+    this._ensureCartDocId(dbInstance).then(docId => {
+      if (!docId) return;
+      dbInstance.collection('cart').doc(docId).update({
+        data: { items: cart }
+      }).catch(err => console.error('[db] 购物车全量更新失败', err));
+    }).catch(err => console.error('[db] 获取购物车文档失败', err));
   },
 
   addToCart(recipe) {
@@ -471,7 +534,10 @@ const db = {
         quantity: 1
       };
     }
-    this.saveCart(cart);
+    cloudCache.cart = cart;
+    this.saveToLocalCache(currentGroupId);
+    // 增量更新：仅写入该菜品字段，避免并发覆盖其他好友的添加
+    this._persistCartItem(recipe.id, cart[recipe.id]);
     return cart;
   },
 
@@ -481,9 +547,17 @@ const db = {
       cart[recipeId].quantity -= 1;
       if (cart[recipeId].quantity <= 0) {
         delete cart[recipeId];
+        cloudCache.cart = cart;
+        this.saveToLocalCache(currentGroupId);
+        // 数量归零，删除该菜品字段
+        this._removeCartItem(recipeId);
+      } else {
+        cloudCache.cart = cart;
+        this.saveToLocalCache(currentGroupId);
+        // 数量递减，增量更新该菜品字段
+        this._persistCartItem(recipeId, cart[recipeId]);
       }
     }
-    this.saveCart(cart);
     return cart;
   },
 
@@ -491,13 +565,25 @@ const db = {
     const cart = this.getCart();
     if (cart[recipeId]) {
       delete cart[recipeId];
-      this.saveCart(cart);
+      cloudCache.cart = cart;
+      this.saveToLocalCache(currentGroupId);
+      this._removeCartItem(recipeId);
     }
     return cart;
   },
 
   clearCart() {
-    this.saveCart({});
+    cloudCache.cart = {};
+    this.saveToLocalCache(currentGroupId);
+    // 清空购物车：全量覆盖 items 为空对象
+    if (!currentGroupId) return {};
+    const dbInstance = wx.cloud.database();
+    this._ensureCartDocId(dbInstance).then(docId => {
+      if (!docId) return;
+      dbInstance.collection('cart').doc(docId).update({
+        data: { items: {} }
+      }).catch(err => console.error('[db] 购物车清空失败', err));
+    }).catch(err => console.error('[db] 获取购物车文档失败', err));
     return {};
   },
 
@@ -548,7 +634,7 @@ const db = {
     this.saveToLocalCache(currentGroupId);
   },
 
-  createOrder(remark = '', isFromShare = false, sharerId = '', chef = null) {
+  async createOrder(remark = '', isFromShare = false, sharerId = '', chef = null) {
     if (!currentGroupId) return null;
     const cart = this.getCart();
     const items = Object.values(cart);
@@ -589,12 +675,19 @@ const db = {
     orders.unshift(newOrder);
     cloudCache.orders = orders;
 
-    const dbInstance = wx.cloud.database();
-    dbInstance.collection('orders').add({
-      data: newOrder
-    }).then(res => {
+    try {
+      const dbInstance = wx.cloud.database();
+      const res = await dbInstance.collection('orders').add({
+        data: newOrder
+      });
       newOrder._id = res.id;
-    });
+    } catch (err) {
+      console.error('[db] createOrder 云端写入失败', err);
+      // 回滚本地缓存
+      cloudCache.orders = orders.filter(o => o.id !== newOrder.id);
+      this.saveToLocalCache(currentGroupId);
+      throw err;
+    }
 
     this.clearCart();
     this.saveToLocalCache(currentGroupId);
