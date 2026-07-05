@@ -3,6 +3,15 @@ const app = getApp();
 
 let stepTimerInterval = null;
 
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 Page({
   data: {
     categories: [],
@@ -62,6 +71,10 @@ Page({
     badgeBump: false,
     hasRendered: false,
 
+    // Splash variables
+    showSplash: false,
+    splashFadeOut: false,
+
     // Loading state
     loading: true
   },
@@ -72,6 +85,21 @@ Page({
       withShareTicket: true,
       menus: ['shareAppMessage', 'shareTimeline']
     });
+
+    const app = getApp();
+    if (!app.globalData.splashShown) {
+      this.isSplashLaunch = true;
+      app.globalData.splashShown = true;
+      this.setData({
+        showSplash: true,
+        splashFadeOut: false
+      });
+      try {
+        wx.hideTabBar({ animate: false });
+      } catch (e) {
+        console.warn('hideTabBar in onLoad failed', e);
+      }
+    }
 
     await app.globalData.loginPromise;
 
@@ -116,14 +144,19 @@ Page({
       }, 50);
     }
 
-    // 阶段2：await 登录 + 后台刷新云端最新数据
-    await app.globalData.loginPromise;
-    await this.loadGroupsList();
-    // Reset cart popup
-    this.setData({ showCartPopup: false });
-    
-    // 检查新用户并提示完善个人信息
-    this.checkNewUserPrompt();
+    if (this.isSplashLaunch) {
+      this.isSplashLaunch = false;
+      await this.runSplashWorkflow();
+    } else {
+      // 阶段2：await 登录 + 后台刷新云端最新数据
+      await app.globalData.loginPromise;
+      await this.loadGroupsList();
+      // Reset cart popup
+      this.setData({ showCartPopup: false });
+      
+      // 检查新用户并提示完善个人信息
+      this.checkNewUserPrompt();
+    }
   },
 
   checkNewUserPrompt() {
@@ -231,6 +264,54 @@ Page({
     wx.navigateTo({
       url: '/pages/group/index'
     });
+  },
+
+  async runSplashWorkflow() {
+    try {
+      wx.hideTabBar({ animate: false });
+    } catch (e) {
+      console.warn('hideTabBar in runSplashWorkflow failed', e);
+    }
+
+    const timeoutPromise = new Promise(resolve => setTimeout(resolve, 6000));
+    const loadPromise = (async () => {
+      try {
+        await app.globalData.loginPromise;
+        await this.loadGroupsList();
+      } catch (err) {
+        console.error('[Splash] load error', err);
+      }
+    })();
+
+    // 保证最少展示 2.5 秒开屏动画，最长 6 秒超时降级
+    await Promise.race([
+      Promise.all([new Promise(resolve => setTimeout(resolve, 2500)), loadPromise]),
+      timeoutPromise
+    ]);
+
+    // 开始渐隐动画
+    this.setData({ splashFadeOut: true });
+
+    // 等待 css transition (600ms)
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    // 从 DOM 中移除开屏组件，并重新展示 TabBar
+    this.setData({ showSplash: false });
+    try {
+      wx.showTabBar();
+    } catch (e) {
+      console.warn('showTabBar failed', e);
+    }
+
+    // 重置购物车弹框状态
+    this.setData({ showCartPopup: false });
+
+    // 检测新用户绑定微信头像昵称引导
+    this.checkNewUserPrompt();
+  },
+
+  preventTouchMove() {
+    // 阻止穿透滑动
   },
 
   async onPullDownRefresh() {
@@ -562,6 +643,7 @@ Page({
     const rollingRecipes = [];
     for (let i = 0; i < randomCount; i++) {
       rollingRecipes.push({
+        id: 'placeholder_' + i,
         name: '今天吃什么？',
         image: '/assets/images/default_food.png'
       });
@@ -603,7 +685,8 @@ Page({
     }
     this.syncRandomUI(selected, {
       randomSelectedRecipes: [],
-      rollingRecipes: this.data.rollingRecipes.map(() => ({
+      rollingRecipes: this.data.rollingRecipes.map((r, i) => ({
+        id: 'placeholder_' + i,
         name: '今天吃什么？',
         image: '/assets/images/default_food.png'
       })),
@@ -618,7 +701,8 @@ Page({
     const newSelected = isAllSelected ? [allIds[0]] : allIds;
     this.syncRandomUI(newSelected, {
       randomSelectedRecipes: [],
-      rollingRecipes: this.data.rollingRecipes.map(() => ({
+      rollingRecipes: this.data.rollingRecipes.map((r, i) => ({
+        id: 'placeholder_' + i,
         name: '今天吃什么？',
         image: '/assets/images/default_food.png'
       })),
@@ -633,6 +717,7 @@ Page({
     const rollingRecipes = [];
     for (let i = 0; i < count; i++) {
       rollingRecipes.push({
+        id: 'placeholder_' + i,
         name: '今天吃什么？',
         image: '/assets/images/default_food.png'
       });
@@ -646,6 +731,18 @@ Page({
       rollRecipeImage: '/assets/images/default_food.png',
       randomSelectedRecipe: null
     });
+  },
+
+  onRollingImageError(e) {
+    const index = e.currentTarget.dataset.index;
+    const rollingRecipes = [...this.data.rollingRecipes];
+    if (rollingRecipes[index]) {
+      rollingRecipes[index] = {
+        ...rollingRecipes[index],
+        image: '/assets/images/default_food.png'
+      };
+      this.setData({ rollingRecipes });
+    }
   },
 
   startRandomRoll() {
@@ -669,16 +766,18 @@ Page({
     let counter = 0;
     const maxRolls = 15;
     const interval = setInterval(() => {
-      const tempShuffled = [...pool].sort(() => 0.5 - Math.random());
+      const tempShuffled = shuffleArray(pool);
       const selectedSlice = tempShuffled.slice(0, rollCount);
       
       const rollingRecipes = selectedSlice.map(r => ({
+        id: r.id,
         name: r.name,
         image: r.image
       }));
       
       while (rollingRecipes.length < count) {
         rollingRecipes.push({
+          id: 'placeholder_' + rollingRecipes.length,
           name: '???',
           image: '/assets/images/default_food.png'
         });
@@ -694,16 +793,18 @@ Page({
       if (counter >= maxRolls) {
         clearInterval(interval);
         
-        const finalShuffled = [...pool].sort(() => 0.5 - Math.random());
+        const finalShuffled = shuffleArray(pool);
         const finalSelected = finalShuffled.slice(0, rollCount);
         
         const finalRolling = finalSelected.map(r => ({
+          id: r.id,
           name: r.name,
           image: r.image
         }));
         
         while (finalRolling.length < count) {
           finalRolling.push({
+            id: 'placeholder_' + finalRolling.length,
             name: '???',
             image: '/assets/images/default_food.png'
           });

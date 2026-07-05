@@ -236,8 +236,8 @@
 
     <view class="rolling-box flex-col align-center justify-center">
       <view class="rolling-list {{randomCount > 1 ? 'grid-' + randomCount : 'single-layout'}}">
-        <view class="rolling-item flex-col align-center justify-center" wx:for="{{rollingRecipes}}" wx:key="index">
-          <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+        <view class="rolling-item flex-col align-center justify-center" wx:for="{{rollingRecipes}}" wx:key="id">
+          <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill" binderror="onRollingImageError" data-index="{{index}}"></image>
           <view class="rolling-name {{isRolling ? 'rolling-text' : ''}}">{{item.name}}</view>
         </view>
       </view>
@@ -409,5 +409,32 @@
         <text class="move-category-current-badge" wx:if="{{movingRecipe && movingRecipe.categoryId === item.id}}">当前</text>
       </view>
     </scroll-view>
+  </view>
+
+  <!-- 9. Splash Loading Screen Overlay -->
+  <view class="splash-container {{splashFadeOut ? 'fade-out' : ''}}" wx:if="{{showSplash}}" catchtouchmove="preventTouchMove">
+    <view class="splash-content flex-col align-center justify-between">
+      <!-- Top spacing -->
+      <view class="splash-spacer"></view>
+      
+      <!-- Center branding section -->
+      <view class="splash-branding flex-col align-center">
+        <image class="splash-logo" src="/assets/images/logo.jpg" mode="aspectFill"></image>
+        <text class="splash-title">Q 菜单</text>
+        <text class="splash-subtitle">用心做每一道菜</text>
+      </view>
+      
+      <!-- Bottom loading indicator & footer -->
+      <view class="splash-footer flex-col align-center">
+        <!-- Bouncing dots loading animation -->
+        <view class="loading-dots flex-row justify-center">
+          <view class="dot dot-1"></view>
+          <view class="dot dot-2"></view>
+          <view class="dot dot-3"></view>
+        </view>
+        <text class="splash-loading-text">正在载入美味数据...</text>
+        <text class="splash-copyright">© 2026 Q 菜单. All rights reserved.</text>
+      </view>
+    </view>
   </view>
 </view>

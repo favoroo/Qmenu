@@ -52,6 +52,7 @@ App({
     userInfo: null,
     loginPromise: null,
     isNewUser: false,
-    hasPromptedProfile: false
+    hasPromptedProfile: false,
+    splashShown: false
   }
 });
