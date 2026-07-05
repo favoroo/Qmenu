@@ -31,7 +31,7 @@ const DEFAULT_RECIPES = [
     name: '椒麻鸡',
     categoryId: 'cat_signature',
     price: 48,
-    image: '/assets/images/default_food.png',
+    image: '/assets/images/default_food.jpg',
     desc: '地道椒麻鸡，皮脆肉嫩，麻辣爽口，香气扑鼻！',
     status: 1,
     deliciousRating: 5,
@@ -61,7 +61,7 @@ const DEFAULT_RECIPES = [
     name: '招牌红烧肉',
     categoryId: 'cat_signature',
     price: 58,
-    image: '/assets/images/default_food.png',
+    image: '/assets/images/hongshaorou_v2.jpg',
     desc: '肥而不腻，入口即化，经典的家常美味。',
     status: 1,
     deliciousRating: 5,
@@ -94,7 +94,7 @@ const DEFAULT_RECIPES = [
     name: '西红柿鸡蛋汤',
     categoryId: 'cat_soup',
     price: 18,
-    image: '/assets/images/default_food.png',
+    image: '/assets/images/tomato_egg_soup_v2.jpg',
     desc: '清淡解腻，营养丰富，经典汤品。',
     status: 1,
     deliciousRating: 4,
@@ -116,6 +116,67 @@ const DEFAULT_RECIPES = [
       { image: '', desc: '往锅内倒入两碗开水，大火烧开煮2分钟，淋入水淀粉勾薄芡，使汤汁稍微浓稠。', timer: 2 },
       { image: '', desc: '转小火，将搅散的蛋液徐徐淋入汤中（可以用筷子顺着锅圈搅动一下），形成漂亮的蛋花，关火。', timer: 1 },
       { image: '', desc: '加入剩下的盐调味，淋入香油，撒上葱花即可出锅。', timer: 1 }
+    ]
+  },
+  {
+    id: 'rec_004',
+    name: '回锅肉',
+    categoryId: 'cat_meat',
+    price: 38,
+    image: '/assets/images/huiguorou_v2.jpg',
+    desc: '川菜经典，肥而不腻，色泽红亮，咸鲜微辣。',
+    status: 1,
+    deliciousRating: 5,
+    difficultyRating: 3,
+    hasMaterialStep: true,
+    materialsPublic: true,
+    materials: [
+      { name: '优质五花肉', weight: '400g' },
+      { name: '蒜苗', weight: '100g' },
+      { name: '郫县豆瓣酱', weight: '1勺' },
+      { name: '豆豉', weight: '10粒' },
+      { name: '生姜', weight: '1块' },
+      { name: '大蒜', weight: '3瓣' },
+      { name: '料酒', weight: '1勺' },
+      { name: '生抽', weight: '1勺' },
+      { name: '白糖', weight: '半茶匙' }
+    ],
+    stepsPublic: true,
+    steps: [
+      { image: '', desc: '五花肉冷水下锅，加入姜片、料酒，大火烧开后转小火煮至筷子能穿透（约20分钟），捞出晾凉切薄片。', timer: 20 },
+      { image: '', desc: '蒜苗斜切段，姜葱切片，准备好豆瓣酱和豆豉。', timer: 3 },
+      { image: '', desc: '锅中放少许油，下入肉片，中小火煸炒至肉片卷曲呈“灯盏窝”状，多余的油脂盛出。', timer: 8 },
+      { image: '', desc: '拨开肉片，下入豆瓣酱、豆豉、姜葱片炒出红油和香味，再将肉片混合翻炒。', timer: 3 },
+      { image: '', desc: '倒入蒜苗段，调入生抽和少许白糖，大火快速翻炒至蒜苗断生即可出锅。', timer: 3 }
+    ]
+  },
+  {
+    id: 'rec_005',
+    name: '蒜蓉西兰花',
+    categoryId: 'cat_vegetable',
+    price: 16,
+    image: '/assets/images/garlic_broccoli_v2.jpg',
+    desc: '清爽可口，蒜香浓郁，营养健康的素菜。',
+    status: 1,
+    deliciousRating: 4,
+    difficultyRating: 2,
+    hasMaterialStep: true,
+    materialsPublic: true,
+    materials: [
+      { name: '西兰花', weight: '1个' },
+      { name: '大蒜', weight: '1头' },
+      { name: '盐', weight: '1茶匙' },
+      { name: '鸡精', weight: '半茶匙' },
+      { name: '水淀粉', weight: '2勺' },
+      { name: '食用油', weight: '2勺' }
+    ],
+    stepsPublic: true,
+    steps: [
+      { image: '', desc: '西兰花切成小朵，用盐水浸泡10分钟后洗净。大蒜剁成蒜蓉。', timer: 10 },
+      { image: '', desc: '锅中烧开水，加入少许盐 and 几滴油，下入西兰花焯水1分钟，捞出过凉水控干。', timer: 2 },
+      { image: '', desc: '锅中放油烧热，下入一半蒜蓉爆香。', timer: 1 },
+      { image: '', desc: '倒入西兰花，大火快速翻炒均匀，加入盐、鸡精调味。', timer: 2 },
+      { image: '', desc: '倒入剩下的一半蒜蓉，淋入水淀粉勾薄芡，翻炒均匀即可出锅。', timer: 2 }
     ]
   }
 ];
@@ -278,6 +339,79 @@ const db = {
         rec._id = res.id;
       }
       recipes = DEFAULT_RECIPES.map(r => ({ ...r, groupId: gid, creatorId: 'system', creatorName: '系统' }));
+    } else {
+      // 增量同步：更新已有默认菜谱的图片及分类属性，以及添加缺失的默认菜谱
+      let updatedAny = false;
+      for (let rec of recipes) {
+        if (rec.creatorId === 'system') {
+          const matchDefault = DEFAULT_RECIPES.find(dr => dr.id === rec.id || dr.name === rec.name);
+          if (matchDefault) {
+            let needsUpdate = false;
+            let updateFields = {};
+            if (rec.image !== matchDefault.image) {
+              needsUpdate = true;
+              updateFields.image = matchDefault.image;
+              rec.image = matchDefault.image;
+            }
+            if (rec.categoryId !== matchDefault.categoryId) {
+              needsUpdate = true;
+              updateFields.categoryId = matchDefault.categoryId;
+              rec.categoryId = matchDefault.categoryId;
+            }
+            if (needsUpdate) {
+              try {
+                await dbInstance.collection('recipes').doc(rec._id).update({
+                  data: updateFields
+                });
+                updatedAny = true;
+              } catch (e) {
+                console.error('[db] 同步默认菜谱属性失败', rec.name, e);
+              }
+            }
+          }
+        }
+      }
+      
+      // 检查是否有缺失的默认菜谱
+      for (let defaultRec of DEFAULT_RECIPES) {
+        const exists = recipes.some(r => r.id === defaultRec.id || r.name === defaultRec.name);
+        if (!exists) {
+          try {
+            const res = await dbInstance.collection('recipes').add({
+              data: {
+                id: defaultRec.id,
+                groupId: gid,
+                name: defaultRec.name,
+                categoryId: defaultRec.categoryId,
+                price: defaultRec.price,
+                image: defaultRec.image,
+                desc: defaultRec.desc,
+                status: defaultRec.status,
+                deliciousRating: defaultRec.deliciousRating || 0,
+                difficultyRating: defaultRec.difficultyRating || 0,
+                hasMaterialStep: defaultRec.hasMaterialStep,
+                materials: defaultRec.materials,
+                materialsPublic: defaultRec.materialsPublic,
+                steps: defaultRec.steps,
+                stepsPublic: defaultRec.stepsPublic,
+                creatorId: 'system',
+                creatorName: '系统'
+              }
+            });
+            const newRec = {
+              ...defaultRec,
+              _id: res.id,
+              groupId: gid,
+              creatorId: 'system',
+              creatorName: '系统'
+            };
+            recipes.push(newRec);
+            updatedAny = true;
+          } catch (e) {
+            console.error('[db] 补全默认菜谱失败', defaultRec.name, e);
+          }
+        }
+      }
     }
     return recipes;
   },
@@ -408,7 +542,7 @@ const db = {
       name: recipe.name,
       categoryId: recipe.categoryId || 'cat_default',
       price: recipe.price !== undefined && recipe.price !== null && recipe.price !== '' ? (isNaN(parseFloat(recipe.price)) ? 0 : parseFloat(recipe.price)) : 0,
-      image: recipe.image || '/assets/images/default_food.png',
+      image: recipe.image || '/assets/images/default_food.jpg',
       desc: recipe.desc || '',
       status: 1,
       deliciousRating: recipe.deliciousRating || 0,

@@ -22,6 +22,7 @@ Page({
     groupedRecipes: [],
     scrollTop: 0,
     recipeScrollTop: 0,
+    refresherTriggered: false,
     searchQuery: '',
     _scrollThrottleTimer: null,
     _isClickScrolling: false,
@@ -36,7 +37,7 @@ Page({
     showRandomModal: false,
     isRolling: false,
     rollRecipeName: '???',
-    rollRecipeImage: '/assets/images/default_food.png',
+    rollRecipeImage: '/assets/images/default_food.jpg',
     randomSelectedRecipe: null,
     randomCount: 1,
     rollingRecipes: [],
@@ -360,13 +361,35 @@ Page({
     if (currentGroupId) {
       await db.initCloudData(currentGroupId);
     }
-    this.loadData();
+    await this.loadData();
     wx.stopPullDownRefresh();
     wx.showToast({
       title: '刷新成功',
       icon: 'success',
       duration: 1000
     });
+  },
+
+  async onRefresherRefresh() {
+    if (this.data.refresherTriggered) return;
+    this.setData({ refresherTriggered: true });
+    
+    try {
+      const currentGroupId = db.getCurrentGroupId();
+      if (currentGroupId) {
+        await db.initCloudData(currentGroupId);
+      }
+      await this.loadData();
+      wx.showToast({
+        title: '刷新成功',
+        icon: 'success',
+        duration: 1000
+      });
+    } catch (e) {
+      console.error('Refresher refresh failed:', e);
+    } finally {
+      this.setData({ refresherTriggered: false });
+    }
   },
 
   async loadData() {
@@ -711,7 +734,7 @@ Page({
       rollingRecipes.push({
         id: 'placeholder_' + i,
         name: '今天吃什么？',
-        image: '/assets/images/default_food.png'
+        image: '/assets/images/default_food.jpg'
       });
     }
 
@@ -721,7 +744,7 @@ Page({
       rollingRecipes: rollingRecipes,
       randomSelectedRecipes: [],
       rollRecipeName: '今天吃什么？',
-      rollRecipeImage: '/assets/images/default_food.png',
+      rollRecipeImage: '/assets/images/default_food.jpg',
       randomSelectedRecipe: null,
       isRolling: false
     }, () => {
@@ -754,7 +777,7 @@ Page({
       rollingRecipes: this.data.rollingRecipes.map((r, i) => ({
         id: 'placeholder_' + i,
         name: '今天吃什么？',
-        image: '/assets/images/default_food.png'
+        image: '/assets/images/default_food.jpg'
       })),
       randomSelectedRecipe: null
     });
@@ -770,7 +793,7 @@ Page({
       rollingRecipes: this.data.rollingRecipes.map((r, i) => ({
         id: 'placeholder_' + i,
         name: '今天吃什么？',
-        image: '/assets/images/default_food.png'
+        image: '/assets/images/default_food.jpg'
       })),
       randomSelectedRecipe: null
     });
@@ -785,7 +808,7 @@ Page({
       rollingRecipes.push({
         id: 'placeholder_' + i,
         name: '今天吃什么？',
-        image: '/assets/images/default_food.png'
+        image: '/assets/images/default_food.jpg'
       });
     }
     
@@ -794,7 +817,7 @@ Page({
       rollingRecipes: rollingRecipes,
       randomSelectedRecipes: [],
       rollRecipeName: '今天吃什么？',
-      rollRecipeImage: '/assets/images/default_food.png',
+      rollRecipeImage: '/assets/images/default_food.jpg',
       randomSelectedRecipe: null
     });
   },
@@ -805,7 +828,7 @@ Page({
     if (rollingRecipes[index]) {
       rollingRecipes[index] = {
         ...rollingRecipes[index],
-        image: '/assets/images/default_food.png'
+        image: '/assets/images/default_food.jpg'
       };
       this.setData({ rollingRecipes });
     }
@@ -845,14 +868,14 @@ Page({
         rollingRecipes.push({
           id: 'placeholder_' + rollingRecipes.length,
           name: '???',
-          image: '/assets/images/default_food.png'
+          image: '/assets/images/default_food.jpg'
         });
       }
 
       this.setData({
         rollingRecipes: rollingRecipes,
         rollRecipeName: rollingRecipes[0] ? rollingRecipes[0].name : '???',
-        rollRecipeImage: rollingRecipes[0] ? rollingRecipes[0].image : '/assets/images/default_food.png'
+        rollRecipeImage: rollingRecipes[0] ? rollingRecipes[0].image : '/assets/images/default_food.jpg'
       });
 
       counter++;
@@ -872,7 +895,7 @@ Page({
           finalRolling.push({
             id: 'placeholder_' + finalRolling.length,
             name: '???',
-            image: '/assets/images/default_food.png'
+            image: '/assets/images/default_food.jpg'
           });
         }
         
@@ -880,7 +903,7 @@ Page({
           rollingRecipes: finalRolling,
           randomSelectedRecipes: finalSelected,
           rollRecipeName: finalRolling[0] ? finalRolling[0].name : '???',
-          rollRecipeImage: finalRolling[0] ? finalRolling[0].image : '/assets/images/default_food.png',
+          rollRecipeImage: finalRolling[0] ? finalRolling[0].image : '/assets/images/default_food.jpg',
           randomSelectedRecipe: finalSelected[0] || null,
           isRolling: false
         });
@@ -978,7 +1001,7 @@ Page({
     wx.showModal({
       title: '确认移动',
       content: `将「${recipe.name}」移动到「${targetName}」？`,
-      confirmColor: '#2563EB',
+      confirmColor: '#007AFF',
       async success(modalRes) {
         if (modalRes.confirm) {
           try {
@@ -1122,7 +1145,7 @@ Page({
         wx.showModal({
           title: '烹饪定时提醒',
           content: `第 ${index + 1} 步：已完成计时！`,
-          confirmColor: '#2563EB',
+          confirmColor: '#007AFF',
           showCancel: false
         });
       } else {

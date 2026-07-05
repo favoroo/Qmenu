@@ -1,6 +1,6 @@
 .container {
   height: 100vh;
-  background-color: #f7fafc;
+  background-color: var(--bg-light);
 }
 
 .discover-scroll {

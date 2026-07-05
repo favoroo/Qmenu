@@ -1,6 +1,6 @@
 .container {
   padding: 30rpx 24rpx;
-  background-color: #f8fafc;
+  background-color: var(--bg-light);
   min-height: 100vh;
 }
 
@@ -16,7 +16,7 @@
   width: 120rpx;
   height: 120rpx;
   border-radius: 60rpx;
-  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-soft) 100%);
   font-size: 56rpx;
   display: flex;
   align-items: center;
@@ -27,13 +27,13 @@
 .no-group-box .title {
   font-size: 34rpx;
   font-weight: bold;
-  color: #334155;
+  color: var(--text-main);
   margin-bottom: 16rpx;
 }
 
 .no-group-box .desc {
   font-size: 26rpx;
-  color: #64748B;
+  color: var(--text-sub);
   line-height: 1.6;
   margin-bottom: 50rpx;
   padding: 0 20rpx;
@@ -50,13 +50,13 @@
 
 .input {
   flex: 1;
-  background-color: #f1f5f9;
-  border-radius: 12rpx;
+  background-color: var(--bg-light);
+  border-radius: var(--radius-sm);
   height: 80rpx;
   padding: 0 24rpx;
   font-size: 28rpx;
   text-align: left;
-  color: #334155;
+  color: var(--text-main);
 }
 
 .join-btn, .create-btn {
@@ -68,12 +68,12 @@
   align-items: center;
   justify-content: center;
   margin-left: 16rpx !important;
-  border-radius: 12rpx;
+  border-radius: var(--radius-md);
 }
 
 .divider {
   font-size: 24rpx;
-  color: #94A3B8;
+  color: var(--text-light);
   margin: 30rpx 0;
   position: relative;
 }
@@ -84,7 +84,7 @@
   top: 50%;
   width: 35%;
   height: 1rpx;
-  background-color: #e2e8f0;
+  background-color: var(--border-color);
 }
 
 .divider::before { left: 0; }
@@ -94,7 +94,7 @@
 .group-header {
   background-color: #ffffff;
   padding: 40rpx 30rpx;
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   margin-bottom: 24rpx;
 }
 
@@ -126,15 +126,15 @@
 }
 
 .invite-code-row {
-  background-color: #F8FAFC;
+  background-color: var(--bg-light);
   padding: 24rpx;
-  border-radius: 12rpx;
+  border-radius: var(--radius-sm);
   margin-bottom: 16rpx;
 }
 
 .code-lbl {
   font-size: 28rpx;
-  color: #475569;
+  color: var(--text-sub);
   flex-shrink: 1;
   margin-right: 16rpx;
 }
@@ -151,7 +151,7 @@
   border: 1rpx solid var(--primary-color);
   background: none;
   padding: 8rpx 20rpx;
-  border-radius: 8rpx;
+  border-radius: var(--radius-sm);
   margin: 0 !important;
   line-height: 1.5;
   transition: all 0.2s ease;
@@ -163,29 +163,29 @@
 
 .share-tips {
   font-size: 22rpx;
-  color: #94A3B8;
+  color: var(--text-light);
 }
 
 /* Members Section */
 .members-section {
   background-color: #ffffff;
   padding: 30rpx;
-  border-radius: 20rpx;
+  border-radius: var(--radius-md);
   margin-bottom: 40rpx;
 }
 
 .section-title {
   font-size: 28rpx;
   font-weight: bold;
-  color: #334155;
+  color: var(--text-main);
   margin-bottom: 24rpx;
   padding-bottom: 16rpx;
-  border-bottom: 1rpx solid #F1F5F9;
+  border-bottom: 1rpx solid var(--border-color);
 }
 
 .member-item {
   padding: 20rpx 0;
-  border-bottom: 1rpx solid #F8FAFC;
+  border-bottom: 1rpx solid var(--border-color);
 }
 
 .member-item:last-child {
@@ -201,13 +201,13 @@
 
 .member-item .nickname {
   font-size: 28rpx;
-  color: #334155;
+  color: var(--text-main);
   font-weight: 500;
 }
 
 .identity-tag {
   font-size: 22rpx;
-  color: #94A3B8;
+  color: var(--text-light);
 }
 
 .identity-tag.owner {
@@ -252,7 +252,7 @@
 
 /* ===== 卡片点击态（全局 .card 已在 app.wxss 定义）===== */
 .card-hover {
-  background-color: #f8fafc;
+  background-color: var(--bg-light);
 }
 
 /* ===== 群组列表 ===== */
@@ -277,7 +277,7 @@
 
 .meta-text {
   font-size: 24rpx;
-  color: #94A3B8;
+  color: var(--text-light);
 }
 
 .current-tag {

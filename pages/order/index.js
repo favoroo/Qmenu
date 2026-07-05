@@ -487,7 +487,7 @@ Page({
         wx.showModal({
           title: '烹饪定时提醒',
           content: `第 ${index + 1} 步：已完成计时！`,
-          confirmColor: '#2563EB',
+          confirmColor: '#007AFF',
           showCancel: false
         });
       } else {

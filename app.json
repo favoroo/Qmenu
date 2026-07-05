@@ -15,11 +15,11 @@
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTitleText": "Q 菜单",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f8fafc"
+    "backgroundColor": "#F2F2F7"
   },
   "tabBar": {
-    "color": "#94A3B8",
-    "selectedColor": "#2563EB",
+    "color": "#8E8E93",
+    "selectedColor": "#007AFF",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [

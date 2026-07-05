@@ -410,7 +410,7 @@ Page({
       const selectedCategory = categories[categoryIndex];
 
       // 封面图：仅 tempPath 才持久化（编辑未换图则保持已存路径）
-      let finalImage = imagePath || '/assets/images/default_food.png';
+      let finalImage = imagePath || '/assets/images/default_food.jpg';
       if (imageUtil.isTempPath(imagePath)) {
         finalImage = await imageUtil.storeImage(imagePath);
       }

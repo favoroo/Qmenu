@@ -33,9 +33,9 @@ Page({
     const W_s = sysInfo.windowWidth;
     const H_s = sysInfo.windowHeight;
     
-    // Crop box width is 90% of screen width, height is calculated using 4:3 ratio
+    // Crop box width is 90% of screen width, height is calculated using 1:1 ratio
     const cropW = Math.round(W_s * 0.9);
-    const cropH = Math.round(cropW * (3 / 4));
+    const cropH = cropW;
     
     const maskLeft = Math.round((W_s - cropW) / 2);
     const maskRight = maskLeft + cropW;
@@ -169,9 +169,9 @@ Page({
         const canvas = res[0].node;
         const ctx = canvas.getContext('2d');
 
-        // Set dimensions (800x600) matching 4:3 ratio
+        // Set dimensions (800x800) matching 1:1 ratio
         const exportW = 800;
-        const exportH = 600;
+        const exportH = 800;
         canvas.width = exportW;
         canvas.height = exportH;
 

@@ -54,7 +54,7 @@ Page({
       content: '「Q 菜单」私房菜点单与分享小程序框架。\n版本：v1.0.0\n技术栈：原生微信小程序 WXML+WXSS+JS',
       showCancel: false,
       confirmText: '好哒',
-      confirmColor: '#2563EB'
+      confirmColor: '#007AFF'
     });
   }
 });

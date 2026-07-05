@@ -99,7 +99,7 @@
       <!-- Card Body (Items) -->
       <view class="order-items-list">
         <view class="order-item flex-row align-center" wx:for="{{item.items}}" wx:for-item="dish" wx:key="recipeId" bindtap="viewRecipeDetail" data-recipe-id="{{dish.recipeId}}">
-          <image class="dish-image" src="{{dish.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+          <image class="dish-image" src="{{dish.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
           <view class="dish-info flex-1 flex-row justify-between align-center">
             <view class="dish-name-qty">
               <view class="dish-name">{{dish.name}}</view>
@@ -122,7 +122,7 @@
       <!-- Card Summary -->
       <view class="order-summary flex-row justify-between align-center">
         <view class="share-info-tag" wx:if="{{item.isFromShare}}">
-          <icon type="success" size="12" color="#2563EB" style="margin-right: 6rpx;"></icon>
+          <icon type="success" size="12" color="#007AFF" style="margin-right: 6rpx;"></icon>
           <text>来自好友拼单</text>
         </view>
         <view class="total-text flex-1 text-right">
@@ -222,7 +222,7 @@
       <!-- Scrollable content -->
       <scroll-view class="detail-content-scroll flex-1" scroll-y>
         <!-- Cover Image -->
-        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
         
         <view class="detail-info-container">
           <!-- Title and Category badge -->

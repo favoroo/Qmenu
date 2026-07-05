@@ -104,13 +104,13 @@
     </scroll-view>
 
     <!-- Right Recipe Scroll -->
-    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation scroll-top="{{scrollTop}}" bindscroll="onRecipeScroll">
+    <scroll-view class="recipe-list flex-1" scroll-y scroll-with-animation scroll-top="{{scrollTop}}" bindscroll="onRecipeScroll" refresher-enabled="{{true}}" refresher-triggered="{{refresherTriggered}}" bindrefresherrefresh="onRefresherRefresh">
       <block wx:for="{{groupedRecipes}}" wx:for-item="group" wx:key="categoryId">
         <view class="category-title-header" id="cat-{{group.categoryId}}">{{group.categoryName}}</view>
         
         <view class="recipes-container" wx:if="{{group.recipes.length > 0}}">
           <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{group.recipes}}" wx:for-item="item" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
-            <image class="recipe-image" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+            <image class="recipe-image" src="{{item.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
             <view class="recipe-info flex-1 flex-col justify-between">
               <view>
                 <view class="recipe-name flex-row align-center justify-between">
@@ -281,7 +281,7 @@
     <view class="rolling-box flex-col align-center justify-center">
       <view class="rolling-list {{randomCount > 1 ? 'grid-' + randomCount : 'single-layout'}}">
         <view class="rolling-item flex-col align-center justify-center" wx:for="{{rollingRecipes}}" wx:key="id">
-          <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{item.image || '/assets/images/default_food.png'}}" mode="aspectFill" binderror="onRollingImageError" data-index="{{index}}"></image>
+          <image class="rolling-image {{isRolling ? 'rotate-animation' : ''}}" src="{{item.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onRollingImageError" data-index="{{index}}"></image>
           <view class="rolling-name {{isRolling ? 'rolling-text' : ''}}">{{item.name}}</view>
         </view>
       </view>
@@ -314,7 +314,7 @@
       <!-- Scrollable content -->
       <scroll-view class="detail-content-scroll flex-1" scroll-y>
         <!-- Cover Image -->
-        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
         
         <view class="detail-info-container">
           <!-- Title and Category badge -->
@@ -456,7 +456,7 @@
 
     <block wx:if="{{movingRecipe}}">
       <view class="move-recipe-hint flex-row align-center">
-        <image class="move-recipe-image" src="{{movingRecipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+        <image class="move-recipe-image" src="{{movingRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
         <text class="move-recipe-name">{{movingRecipe.name}}</text>
       </view>
     </block>

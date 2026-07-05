@@ -1,7 +1,7 @@
 <view class="container">
   <scroll-view class="discover-scroll" scroll-y>
     <!-- Top Swiper Banner -->
-    <swiper class="banner-swiper" indicator-dots autoplay circular indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#2563EB">
+    <swiper class="banner-swiper" indicator-dots autoplay circular indicator-color="rgba(255,255,255,0.4)" indicator-active-color="#007AFF">
       <swiper-item wx:for="{{banners}}" wx:key="id" bindtap="viewArticle" data-title="{{item.title}}">
         <view class="swiper-item-container">
           <image class="banner-image" src="{{item.image}}" mode="aspectFill"></image>

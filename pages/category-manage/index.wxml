@@ -5,7 +5,7 @@
     <view class="form-row flex-row">
       <input
         class="form-input flex-1 name-input"
-        placeholder="分类名称，如：精品炒菜"
+        placeholder="如：精品炒菜"
         value="{{newCatName}}"
         bindinput="onNameInput"
         placeholder-class="input-placeholder"
@@ -75,7 +75,7 @@
             <view class="dish-grip-bar"></view>
             <view class="dish-grip-bar"></view>
           </view>
-          <image class="dish-thumb" src="{{recipe.image || '/assets/images/default_food.png'}}" mode="aspectFill"></image>
+          <image class="dish-thumb" src="{{recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
           <text class="dish-name flex-1 text-ellipsis">{{recipe.name}}</text>
           <text class="dish-price">¥{{recipe.price}}</text>
           <view

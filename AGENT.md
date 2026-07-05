@@ -175,6 +175,7 @@ Page({
 - **图片压缩、保存、删除必须经 `utils/image.js`**。
 - **压缩参数**：`quality=80`，`maxWidth/maxHeight=1080`。
 - **存储路径**：`recipes/时间戳-随机.ext`（云存储，`storageMode: 'cloud'`）。
+- **本地静态图片限制**：打包进小程序的本地静态资源图片（如 `assets/images/` 目录）必须进行压缩优化（建议最大边长不超过 `600px`，JPEG 质量在 `70` 左右，单张图片控制在 `100KB` 以内），避免项目体积超过微信小程序主包 2MB 限制导致预览/上传失败（系统错误码：80051）。
 - **删除菜谱前**必须调用 `imageUtil.collectRecipeImages(recipe)` 收集封面 + 步骤图，再 `removeImagesSync` 批量清理云存储。
 - **禁止误删** `/assets/`、`cloud://`、`http(s)://` 路径（用 `isManagedLocalFile` / `isTempPath` 守卫）。
 - 历史遗留的本地持久化路径 `USER_DATA_PATH/recipe_imgs` 仅作降级方案，新代码统一走云存储。
