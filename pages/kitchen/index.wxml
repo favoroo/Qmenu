@@ -97,7 +97,7 @@
       </view>
       
       <!-- Category Management shortcut at the bottom -->
-      <view class="category-manage-btn flex-row justify-center align-center" bindtap="goCategoryManage" wx:if="{{isAdmin}}">
+      <view class="category-manage-btn flex-row justify-center align-center" bindtap="goCategoryManage">
         <text class="manage-icon">⚙</text>
         <text>管理</text>
       </view>
@@ -162,7 +162,7 @@
       </block>
       
       <!-- Add Recipe Button at the bottom of the recipe list -->
-      <view class="bottom-add-recipe-wrapper flex-row justify-center" wx:if="{{isAdmin}}">
+      <view class="bottom-add-recipe-wrapper flex-row justify-center">
         <view class="btn-add-recipe-bottom flex-row align-center justify-center" bindtap="goRecipeAdd">
           <text class="add-icon">+</text> 添加菜谱
         </view>
@@ -172,7 +172,7 @@
       <view class="empty-state flex-col align-center justify-center" wx:if="{{filteredRecipes.length === 0 && !loading}}">
         <icon type="search" size="48" color="#cbd5e0"></icon>
         <view class="empty-text">{{searchQuery ? '没有找到符合条件的菜谱哦' : '暂无菜谱'}}</view>
-        <button class="btn-secondary margin-top-md" bindtap="goRecipeAdd" wx:if="{{isAdmin}}">添加一道菜</button>
+        <button class="btn-secondary margin-top-md" bindtap="goRecipeAdd">添加一道菜</button>
       </view>
       <view style="height: 160rpx;"></view> <!-- Bottom spacer -->
     </scroll-view>
@@ -473,6 +473,35 @@
         <text class="move-category-current-badge" wx:if="{{movingRecipe && movingRecipe.categoryId === item.id}}">当前</text>
       </view>
     </scroll-view>
+  </view>
+  <!-- Custom Profile Modal for New Users -->
+  <view class="modal-overlay" wx:if="{{showProfileModal}}"></view>
+  <view class="profile-modal-card flex-col align-center {{showProfileModal ? 'scale-in' : ''}}" wx:if="{{showProfileModal}}">
+    <view class="modal-close" bindtap="onCloseProfileModal">×</view>
+    <view class="modal-title">完善个人信息</view>
+    <view class="profile-modal-subtitle">为了方便在群组内协作与拼单，请确认您的微信头像和昵称</view>
+
+    <view class="profile-modal-form">
+      <view class="profile-avatar-section flex-col align-center">
+        <button class="profile-avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseProfileAvatar">
+          <image class="profile-avatar-img" src="{{profileAvatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+          <view class="profile-avatar-edit-badge">
+            <text class="edit-badge-icon">📷</text>
+          </view>
+        </button>
+        <text class="profile-avatar-tip">点击选择微信头像</text>
+      </view>
+
+      <view class="profile-input-item flex-row">
+        <text class="profile-input-label">昵称</text>
+        <input type="nickname" class="profile-input-field" placeholder="请选择或输入昵称" value="{{profileNickName}}" bindblur="onInputProfileNickname" bindinput="onInputProfileNickname"/>
+      </view>
+    </view>
+
+    <view class="profile-modal-actions flex-row">
+      <button class="btn-profile-cancel flex-1" bindtap="onCloseProfileModal">暂不设置</button>
+      <button class="btn-profile-confirm flex-1" bindtap="onSubmitProfile">确认并保存</button>
+    </view>
   </view>
 
   <!-- 9. Splash Loading Screen Overlay -->

@@ -40,7 +40,12 @@ Page({
     try {
       let finalAvatarUrl = avatarUrl;
       // 如果头像是本地临时文件，先上传到云存储
-      if (avatarUrl && (avatarUrl.includes('tmp') || avatarUrl.startsWith('wxfile://') || avatarUrl.startsWith('http://tmp'))) {
+      if (avatarUrl && (
+        avatarUrl.includes('tmp') || 
+        avatarUrl.startsWith('wxfile://') || 
+        avatarUrl.startsWith('http://tmp') ||
+        (!avatarUrl.startsWith('cloud://') && !avatarUrl.startsWith('/assets/'))
+      )) {
         const cloudPath = `avatars/${Date.now()}-${Math.random().toString(36).substr(2, 6)}.png`;
         const uploadRes = await wx.cloud.uploadFile({
           cloudPath,

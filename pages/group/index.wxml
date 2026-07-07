@@ -72,7 +72,11 @@
           <button class="copy-btn" bindtap="copyInviteCode">复制</button>
         </view>
       </view>
-      <view class="share-tips">分享此邀请码给好友，好友加入后即可共同编辑菜单与拼单。</view>
+      <button class="btn-share-group flex-row align-center justify-center" open-type="share">
+        <text class="share-icon">📤</text>
+        <text>直接分享群组给微信好友</text>
+      </button>
+      <view class="share-tips">分享此邀请码或发送邀请链接给好友，好友打开后即可加入群组并共同编辑与拼单。</view>
     </view>
 
     <!-- 成员列表 -->

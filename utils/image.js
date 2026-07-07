@@ -29,7 +29,10 @@ function isTempPath(p) {
   if (!p) return false;
   if (p.indexOf('/assets/') === 0) return false;
   if (p.startsWith('cloud://')) return false;
-  if (/^https?:\/\//.test(p)) return false;
+  if (/^https?:\/\//.test(p)) {
+    // 兼容安卓/模拟器中 http://tmp/ 或 https://tmp/ 开头的临时路径
+    return p.includes('tmp') || p.includes('127.0.0.1') || p.includes('localhost');
+  }
   return true;
 }
 
@@ -220,6 +223,283 @@ function clearAll() {
   }
 }
 
+// ========== 云存储 fileID → 临时下载链接解析 ==========
+// 解决免费版云存储权限无法设为"所有用户可读"的问题
+// 临时链接有效期约 2 小时，缓存 1.5 小时以减少云函数调用
+
+const URL_CACHE_KEY = 'img_url_cache';
+const URL_CACHE_TTL = 1.5 * 60 * 60 * 1000; // 1.5 小时
+
+// 读取缓存
+function _getCache() {
+  try {
+    return wx.getStorageSync(URL_CACHE_KEY) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+// 写入缓存
+function _setCache(cache) {
+  try {
+    wx.setStorageSync(URL_CACHE_KEY, cache);
+  } catch (e) {
+    // 缓存写入失败忽略
+  }
+}
+
+// 从缓存中获取有效URL
+function _getCachedUrl(fileID) {
+  const cache = _getCache();
+  const entry = cache[fileID];
+  if (entry && Date.now() - entry.time < URL_CACHE_TTL) {
+    return entry.url;
+  }
+  return null;
+}
+
+// 写入单条缓存
+function _setCachedUrl(fileID, url) {
+  const cache = _getCache();
+  cache[fileID] = { url, time: Date.now() };
+  // 顺便清理过期缓存（最多保留 200 条）
+  const keys = Object.keys(cache);
+  if (keys.length > 200) {
+    keys.sort((a, b) => cache[a].time - cache[b].time);
+    for (let i = 0; i < keys.length - 200; i++) {
+      delete cache[keys[i]];
+    }
+  }
+  _setCache(cache);
+}
+
+// 当前正在进行的云函数请求（去重合并）
+let _pendingPromise = null;
+let _pendingFileIDs = [];
+let _pendingCallbacks = [];
+
+/**
+ * 判断是否为云存储 fileID
+ */
+function isCloudFileURL(url) {
+  return typeof url === 'string' && url.startsWith('cloud://');
+}
+
+/**
+ * 将 cloud:// 路径替换为空字符串（用于初始渲染时避免路径报错，WXML 会 fallback 到默认图）
+ * 非 cloud:// 路径原样返回
+ */
+function maskCloudUrl(url) {
+  if (isCloudFileURL(url)) return '';
+  return url;
+}
+
+/**
+ * 批量解析 cloud:// fileID 为临时下载链接
+ * 非 cloud:// 路径（如 /assets/ 开头、https:// 开头）原样返回
+ * 解析失败的 fileID 返回原始 cloud:// 路径（允许重试，不上缓存）
+ * 
+ * @param {string[]} fileIDs - fileID 数组
+ * @returns {Promise<Object>} { fileID: tempURL } 映射
+ */
+function resolveImages(fileIDs) {
+  if (!fileIDs || !Array.isArray(fileIDs)) return Promise.resolve({});
+  
+  const validIDs = fileIDs.filter(id => typeof id === 'string' && id);
+  if (validIDs.length === 0) return Promise.resolve({});
+
+  const result = {};
+  const needFetch = [];
+
+  // 先从缓存取，非 cloud:// 直接返回
+  validIDs.forEach(id => {
+    if (!id.startsWith('cloud://')) {
+      result[id] = id;
+    } else {
+      const cached = _getCachedUrl(id);
+      if (cached) {
+        result[id] = cached;
+      } else {
+        needFetch.push(id);
+      }
+    }
+  });
+
+  if (needFetch.length === 0) {
+    return Promise.resolve(result);
+  }
+
+  // 合并请求：如果已有在途请求，把这批加进去
+  if (_pendingPromise) {
+    needFetch.forEach(id => {
+      if (_pendingFileIDs.indexOf(id) === -1) {
+        _pendingFileIDs.push(id);
+      }
+    });
+    return new Promise(resolve => {
+      _pendingCallbacks.push((allResults) => {
+        const merged = { ...result };
+        needFetch.forEach(id => {
+          if (allResults.hasOwnProperty(id)) merged[id] = allResults[id];
+        });
+        resolve(merged);
+      });
+    });
+  }
+
+  // 新建请求
+  _pendingFileIDs = [...needFetch];
+  _pendingCallbacks = [];
+
+  _pendingPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      const batchIDs = [..._pendingFileIDs];
+      const callbacks = [..._pendingCallbacks];
+      
+      _pendingPromise = null;
+      _pendingFileIDs = [];
+      _pendingCallbacks = [];
+
+      wx.cloud.callFunction({
+        name: 'getTempFileURL',
+        data: { fileIDs: batchIDs },
+        success: res => {
+          const allResults = {};
+          if (res.result && res.result.success && res.result.fileList) {
+            res.result.fileList.forEach(item => {
+              if (item.status === 0 && item.tempFileURL) {
+                // 成功：缓存并返回 https URL
+                allResults[item.fileID] = item.tempFileURL;
+                _setCachedUrl(item.fileID, item.tempFileURL);
+              } else {
+                // 失败：返回原始 cloud:// 路径（不缓存，下次重试）
+                console.warn('[image] getTempFileURL 失败:', item.fileID, item.errMsg || 'status=' + item.status);
+                allResults[item.fileID] = item.fileID;
+              }
+            });
+          } else {
+            // 云函数整体失败：返回原始 cloud:// 路径
+            console.warn('[image] getTempFileURL 云函数返回失败:', res.result && res.result.errMsg);
+            batchIDs.forEach(id => { allResults[id] = id; });
+          }
+          // 填充主结果
+          batchIDs.forEach(id => {
+            if (!result.hasOwnProperty(id)) result[id] = allResults[id];
+          });
+          callbacks.forEach(cb => cb(allResults));
+          resolve(result);
+        },
+        fail: (err) => {
+          // 网络失败：返回原始 cloud:// 路径（不缓存，下次重试）
+          console.warn('[image] getTempFileURL 调用失败:', err);
+          const failResults = {};
+          batchIDs.forEach(id => {
+            result[id] = id;
+            failResults[id] = id;
+          });
+          callbacks.forEach(cb => cb(failResults));
+          resolve(result);
+        }
+      });
+    }, 50);
+  });
+
+  return _pendingPromise.then(() => result);
+}
+
+/**
+ * 解析单个 fileID 为临时下载链接
+ */
+function resolveImage(fileID) {
+  if (!fileID) return Promise.resolve('');
+  if (!isCloudFileURL(fileID)) return Promise.resolve(fileID);
+  return resolveImages([fileID]).then(map => map[fileID] || fileID);
+}
+
+/**
+ * 批量解析菜谱列表中的图片（封面图）
+ * 只替换成功解析的，失败的保留原值
+ */
+function resolveRecipeImages(recipes) {
+  if (!recipes || !Array.isArray(recipes) || recipes.length === 0) {
+    return Promise.resolve(recipes || []);
+  }
+  const fileIDs = recipes
+    .map(r => r.image)
+    .filter(id => isCloudFileURL(id));
+  if (fileIDs.length === 0) {
+    return Promise.resolve(recipes.map(r => ({ ...r })));
+  }
+  return resolveImages(fileIDs).then(map => {
+    return recipes.map(r => {
+      if (r.image && isCloudFileURL(r.image) && map[r.image] && map[r.image].startsWith('https://')) {
+        return { ...r, image: map[r.image] };
+      }
+      return { ...r };
+    });
+  });
+}
+
+/**
+ * 解析单个菜谱详情（含步骤图）
+ */
+function resolveRecipeDetail(recipe) {
+  if (!recipe) return Promise.resolve(recipe);
+  const fileIDs = [];
+  if (isCloudFileURL(recipe.image)) fileIDs.push(recipe.image);
+  (recipe.steps || []).forEach(s => {
+    if (isCloudFileURL(s.image)) fileIDs.push(s.image);
+  });
+  if (fileIDs.length === 0) return Promise.resolve({ ...recipe });
+  return resolveImages(fileIDs).then(map => {
+    const newRecipe = { ...recipe };
+    if (recipe.image && isCloudFileURL(recipe.image) && map[recipe.image] && map[recipe.image].startsWith('https://')) {
+      newRecipe.image = map[recipe.image];
+    }
+    if (recipe.steps) {
+      newRecipe.steps = recipe.steps.map(s => {
+        if (s.image && isCloudFileURL(s.image) && map[s.image] && map[s.image].startsWith('https://')) {
+          return { ...s, image: map[s.image] };
+        }
+        return { ...s };
+      });
+    }
+    return newRecipe;
+  });
+}
+
+/**
+ * 批量解析用户/成员的头像
+ * 只替换成功解析的，失败的保留原值
+ */
+function resolveAvatars(users, avatarField) {
+  const field = avatarField || 'avatarUrl';
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    return Promise.resolve(users || []);
+  }
+  const fileIDs = users
+    .map(u => u[field])
+    .filter(id => isCloudFileURL(id));
+  if (fileIDs.length === 0) {
+    return Promise.resolve(users.map(u => ({ ...u })));
+  }
+  return resolveImages(fileIDs).then(map => {
+    return users.map(u => {
+      if (u[field] && isCloudFileURL(u[field]) && map[u[field]] && map[u[field]].startsWith('https://')) {
+        return { ...u, [field]: map[u[field]] };
+      }
+      return { ...u };
+    });
+  });
+}
+
+/**
+ * 解析单个头像URL
+ */
+function resolveAvatar(avatarUrl) {
+  return resolveImage(avatarUrl);
+}
+
 module.exports = {
   CONFIG,
   storeImage,
@@ -230,5 +510,14 @@ module.exports = {
   removeImagesSync,
   removeImagesAsync,
   collectRecipeImages,
-  clearAll
+  clearAll,
+  // fileID 解析工具
+  isCloudFileURL,
+  maskCloudUrl,
+  resolveImage,
+  resolveImages,
+  resolveRecipeImages,
+  resolveRecipeDetail,
+  resolveAvatar,
+  resolveAvatars
 };

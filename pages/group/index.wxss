@@ -334,3 +334,31 @@
   color: #EF4444;
   background-color: #FEF2F2;
 }
+
+/* ===== 分享群组按钮样式 ===== */
+.btn-share-group {
+  width: 100% !important;
+  height: 88rpx;
+  background: linear-gradient(135deg, var(--primary-color) 0%, #1D4ED8 100%);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20rpx 0 24rpx 0 !important;
+  border: none;
+  box-shadow: 0 4rpx 12rpx rgba(0, 91, 203, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-share-group:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.share-icon {
+  margin-right: 12rpx;
+  font-size: 32rpx;
+}

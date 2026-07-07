@@ -1,5 +1,6 @@
 const db = require('../../utils/db.js');
 const subscribe = require('../../utils/subscribe.js');
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -40,10 +41,41 @@ Page({
     const items = Object.values(cart);
     const total = db.getCartTotal();
 
+    // 初始渲染时把 cloud:// 图片替换为空字符串（WXML fallback 到默认图）
+    const displayItems = items.map(item => ({
+      ...item,
+      recipe: {
+        ...item.recipe,
+        image: imageUtil.maskCloudUrl(item.recipe.image)
+      }
+    }));
+
     this.setData({
-      cartItems: items,
+      cartItems: displayItems,
       cartTotal: total
     });
+
+    // 异步解析购物车中菜谱的 cloud:// 图片
+    this._resolveCartImages(items);
+  },
+
+  async _resolveCartImages(items) {
+    if (!items || items.length === 0) return;
+    try {
+      const recipes = items.map(item => item.recipe);
+      const resolved = await imageUtil.resolveRecipeImages(recipes);
+      const map = {};
+      resolved.forEach(r => { map[r.id] = r; });
+      const updatedItems = items.map(item => {
+        if (item.recipe && map[item.recipe.id]) {
+          return { ...item, recipe: map[item.recipe.id] };
+        }
+        return { ...item };
+      });
+      this.setData({ cartItems: updatedItems });
+    } catch (e) {
+      console.warn('[order-confirm] 解析购物车图片失败', e);
+    }
   },
 
   async loadMembers() {
@@ -64,10 +96,33 @@ Page({
         const me = app.globalData.userInfo;
         // 默认选中自己（自做）
         const defaultChef = members.find(m => m.openid === me.openid) || null;
-        this.setData({ members, selectedChef: defaultChef });
+        // 初始渲染时把 cloud:// 头像替换为空字符串
+        const displayMembers = members.map(m => ({
+          ...m,
+          avatarUrl: imageUtil.maskCloudUrl(m.avatarUrl)
+        }));
+        const displayChef = defaultChef ? {
+          ...defaultChef,
+          avatarUrl: imageUtil.maskCloudUrl(defaultChef.avatarUrl)
+        } : null;
+        this.setData({ members: displayMembers, selectedChef: displayChef });
+        // 异步解析成员头像（使用原始 members 数据）
+        this._resolveMemberAvatars(members);
       }
     } catch (err) {
       console.error('加载群成员失败', err);
+    }
+  },
+
+  async _resolveMemberAvatars(members) {
+    if (!members || members.length === 0) return;
+    try {
+      const resolved = await imageUtil.resolveAvatars(members);
+      const selected = this.data.selectedChef;
+      const updatedSelected = selected && resolved.find(m => m.openid === selected.openid) || selected;
+      this.setData({ members: resolved, selectedChef: updatedSelected });
+    } catch (e) {
+      console.warn('[order-confirm] 解析成员头像失败', e);
     }
   },
 

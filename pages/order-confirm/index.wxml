@@ -26,7 +26,7 @@
       <view class="card-title">菜品明细</view>
       
       <view class="dish-item flex-row align-center" wx:for="{{cartItems}}" wx:key="recipe.id">
-        <image class="dish-image" src="{{item.recipe.image}}" mode="aspectFill"></image>
+        <image class="dish-image" src="{{item.recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
         <view class="dish-detail flex-1 flex-row justify-between align-center">
           <view class="dish-name-qty">
             <view class="dish-name">{{item.recipe.name}}</view>

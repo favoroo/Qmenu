@@ -39,6 +39,10 @@ exports.main = async (event, context) => {
       return { success: true, group, alreadyIn: true }
     }
 
+    if (event.dryRun) {
+      return { success: true, group, alreadyIn: false }
+    }
+
     const newMember = {
       openid: OPENID,
       nickName: user.nickName,

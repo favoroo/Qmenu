@@ -1,5 +1,6 @@
 const app = getApp();
 const db = require('../../utils/db.js');
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -16,6 +17,11 @@ Page({
   },
 
   async onLoad(options) {
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline']
+    });
+
     wx.showLoading({ title: '加载中...' });
     await app.globalData.loginPromise;
     wx.hideLoading();
@@ -70,11 +76,19 @@ Page({
       if (res.result && res.result.success) {
         const group = res.result.group;
         const myOpenid = this.data.myOpenid;
+        // 初始渲染时把 cloud:// 头像替换为空字符串
+        const displayMembers = (group.members || []).map(m => ({
+          ...m,
+          avatarUrl: imageUtil.maskCloudUrl(m.avatarUrl)
+        }));
+        const displayGroup = { ...group, members: displayMembers };
         this.setData({
-          group: group,
+          group: displayGroup,
           isOwner: group.ownerId === myOpenid
         });
         wx.setNavigationBarTitle({ title: group.name || '群组详情' });
+        // 异步解析群成员头像（使用原始 group 数据）
+        this._resolveGroupAvatars(group);
       } else {
         wx.showToast({ title: res.result.errMsg || '获取群组失败', icon: 'none' });
       }
@@ -83,6 +97,21 @@ Page({
       wx.showToast({ title: '网络错误', icon: 'none' });
     } finally {
       wx.hideLoading();
+    }
+  },
+
+  // 异步解析群组成员的 cloud:// 头像为临时下载链接
+  async _resolveGroupAvatars(group) {
+    if (!group || !group.members || group.members.length === 0) return;
+    try {
+      const resolvedMembers = await imageUtil.resolveAvatars(group.members);
+      const updatedGroup = { ...group, members: resolvedMembers };
+      // 只有当前显示的还是同一个群组时才更新
+      if (this.data.group && this.data.group._id === group._id) {
+        this.setData({ group: updatedGroup });
+      }
+    } catch (e) {
+      console.warn('[group] 解析成员头像失败', e);
     }
   },
 
@@ -448,5 +477,24 @@ Page({
       wx.hideLoading();
       wx.showToast({ title: err.message || '转让失败', icon: 'none' });
     }
+  },
+
+  onShareAppMessage() {
+    const { group } = this.data;
+    const sharerInfo = app.globalData.userInfo || wx.getStorageSync('userInfo') || { nickName: '吃货好友' };
+    
+    if (!group) {
+      return {
+        title: `「${sharerInfo.nickName}」邀请你一起用 Q 菜单点菜！`,
+        path: '/pages/kitchen/index',
+        imageUrl: ''
+      };
+    }
+    
+    return {
+      title: `「${sharerInfo.nickName}」邀请你加入群组「${group.name}」一起拼单！`,
+      path: `/pages/kitchen/index?groupId=${group._id}&inviteCode=${group.inviteCode}`,
+      imageUrl: ''
+    };
   }
 });

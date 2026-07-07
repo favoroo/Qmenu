@@ -1,4 +1,5 @@
 const db = require('../../utils/db.js');
+const imageUtil = require('../../utils/image.js');
 const app = getApp();
 
 let stepTimerInterval = null;
@@ -81,7 +82,12 @@ Page({
 
     // Chef ranking (mini bar)
     chefRanking: [],
-    chefRankingTotalStars: 0
+    chefRankingTotalStars: 0,
+
+    // Profile modal for new users
+    showProfileModal: false,
+    profileAvatarUrl: '',
+    profileNickName: ''
   },
 
   async onLoad(options) {
@@ -105,23 +111,89 @@ Page({
 
     // Check if entered via invitation link
     if (options.groupId && options.inviteCode) {
-      wx.showLoading({ title: '正在加入群组...', mask: true });
-      try {
-        const res = await wx.cloud.callFunction({
-          name: 'joinGroup',
-          data: { inviteCode: options.inviteCode }
-        });
-        if (res.result && res.result.success) {
-          db.setCurrentGroupId(options.groupId);
-          wx.showToast({ title: '已成功加入好友群组！', icon: 'success' });
+      this.inviteOptions = options;
+    }
+  },
+
+  async handleInviteJoin(options) {
+    const { groupId, inviteCode } = options;
+    if (!groupId || !inviteCode) return;
+
+    wx.showLoading({ title: '正在校验邀请...', mask: true });
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'joinGroup',
+        data: { inviteCode, dryRun: true }
+      });
+      wx.hideLoading();
+
+      if (res.result && res.result.success) {
+        const { group, alreadyIn } = res.result;
+        
+        if (alreadyIn) {
+          db.setCurrentGroupId(groupId);
+          db.setLastGroupId(groupId);
+          wx.showToast({
+            title: `已切换至「${group.name}」`,
+            icon: 'success',
+            duration: 2000
+          });
         } else {
-          wx.showToast({ title: res.result.errMsg || '加入群组失败', icon: 'none' });
+          await new Promise((resolve) => {
+            wx.showModal({
+              title: '加入群组邀请',
+              content: `收到好友邀请，是否加入群组「${group.name}」？`,
+              confirmText: '加入',
+              cancelText: '取消',
+              success: async (modalRes) => {
+                if (modalRes.confirm) {
+                  wx.showLoading({ title: '正在加入...', mask: true });
+                  try {
+                    const joinRes = await wx.cloud.callFunction({
+                      name: 'joinGroup',
+                      data: { inviteCode }
+                    });
+                    wx.hideLoading();
+                    
+                    if (joinRes.result && joinRes.result.success) {
+                      db.setCurrentGroupId(groupId);
+                      db.setLastGroupId(groupId);
+                      wx.showToast({
+                        title: '成功加入群组！',
+                        icon: 'success',
+                        duration: 2000
+                      });
+                    } else {
+                      wx.showToast({
+                        title: joinRes.result.errMsg || '加入群组失败',
+                        icon: 'none',
+                        duration: 2000
+                      });
+                    }
+                  } catch (err) {
+                    wx.hideLoading();
+                    console.error(err);
+                    wx.showToast({ title: '网络错误，加入失败', icon: 'none' });
+                  }
+                } else {
+                  wx.showToast({ title: '已取消加入', icon: 'none' });
+                }
+                resolve();
+              }
+            });
+          });
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        wx.hideLoading();
+      } else {
+        wx.showToast({
+          title: res.result.errMsg || '邀请校验失败',
+          icon: 'none',
+          duration: 2000
+        });
       }
+    } catch (err) {
+      wx.hideLoading();
+      console.error(err);
+      wx.showToast({ title: '网络错误，校验失败', icon: 'none' });
     }
   },
 
@@ -164,6 +236,13 @@ Page({
     } else {
       // 阶段2：await 登录 + 后台刷新云端最新数据
       await app.globalData.loginPromise;
+
+      // 处理分享链接入群逻辑
+      if (this.inviteOptions) {
+        await this.handleInviteJoin(this.inviteOptions);
+        this.inviteOptions = null;
+      }
+
       await this.loadGroupsList();
       // Reset cart popup
       this.setData({ showCartPopup: false });
@@ -179,24 +258,101 @@ Page({
     const isDefaultAvatar = userInfo && userInfo.avatarUrl && 
       (userInfo.avatarUrl.includes('default_avatar.png') || 
        userInfo.avatarUrl.includes('logo.png') || 
-       userInfo.avatarUrl.includes('logo.jpg'));
+       userInfo.avatarUrl.includes('logo.jpg') ||
+       userInfo.avatarUrl.startsWith('wxfile://') ||
+       userInfo.avatarUrl.startsWith('http://tmp/') ||
+       userInfo.avatarUrl.includes('tmp'));
     const isNew = app.globalData.isNewUser || isDefaultNick || isDefaultAvatar;
 
     if (isNew && !app.globalData.hasPromptedProfile) {
       app.globalData.hasPromptedProfile = true;
-      wx.showModal({
-        title: '完善个人信息',
-        content: '为了方便在群组内协作与拼单，建议您设置微信头像和昵称。是否现在去设置？',
-        confirmText: '去设置',
-        cancelText: '暂不设置',
-        success: (res) => {
-          if (res.confirm) {
-            wx.navigateTo({
-              url: '/pages/login/index'
-            });
-          }
+      this.setData({
+        showProfileModal: true,
+        profileAvatarUrl: (userInfo && userInfo.avatarUrl) || '/assets/images/default_avatar.png',
+        profileNickName: (userInfo && !isDefaultNick) ? userInfo.nickName : ''
+      });
+    }
+  },
+
+  onChooseProfileAvatar(e) {
+    const { avatarUrl } = e.detail;
+    this.setData({
+      profileAvatarUrl: avatarUrl
+    });
+  },
+
+  onInputProfileNickname(e) {
+    this.setData({
+      profileNickName: e.detail.value
+    });
+  },
+
+  onCloseProfileModal() {
+    this.setData({
+      showProfileModal: false
+    });
+  },
+
+  async onSubmitProfile() {
+    const { profileAvatarUrl, profileNickName } = this.data;
+    if (!profileNickName || !profileNickName.trim()) {
+      wx.showToast({ title: '请输入昵称', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '保存中...', mask: true });
+
+    try {
+      let finalAvatarUrl = profileAvatarUrl;
+      // 如果头像是本地临时文件，先上传到云存储
+      if (profileAvatarUrl && (
+        profileAvatarUrl.includes('tmp') || 
+        profileAvatarUrl.startsWith('wxfile://') || 
+        profileAvatarUrl.startsWith('http://tmp') ||
+        (!profileAvatarUrl.startsWith('cloud://') && !profileAvatarUrl.startsWith('/assets/'))
+      )) {
+        const cloudPath = `avatars/${Date.now()}-${Math.random().toString(36).substr(2, 6)}.png`;
+        const uploadRes = await wx.cloud.uploadFile({
+          cloudPath,
+          filePath: profileAvatarUrl
+        });
+        finalAvatarUrl = uploadRes.fileID;
+      }
+
+      const res = await wx.cloud.callFunction({
+        name: 'updateUser',
+        data: {
+          nickName: profileNickName.trim(),
+          avatarUrl: finalAvatarUrl
         }
       });
+
+      if (res.result && res.result.success) {
+        app.globalData.userInfo = res.result.userInfo;
+        wx.setStorageSync('userInfo', res.result.userInfo);
+
+        // 更新本页面管理员权限检测
+        const currentGroup = this.data.currentGroup;
+        const myOpenid = res.result.userInfo.openid || '';
+        const isAdmin = currentGroup && currentGroup.ownerId === myOpenid;
+
+        this.setData({
+          showProfileModal: false,
+          isAdmin: isAdmin
+        });
+
+        wx.showToast({ title: '保存成功', icon: 'success' });
+        
+        // 刷新列表数据
+        this.loadData();
+      } else {
+        throw new Error(res.result ? res.result.errMsg : '更新失败');
+      }
+    } catch (err) {
+      console.error(err);
+      wx.showToast({ title: err.message || '保存失败', icon: 'none' });
+    } finally {
+      wx.hideLoading();
     }
   },
 
@@ -318,6 +474,13 @@ Page({
       const loadPromise = (async () => {
         try {
           await app.globalData.loginPromise;
+          
+          // 处理分享链接入群逻辑
+          if (this.inviteOptions) {
+            await this.handleInviteJoin(this.inviteOptions);
+            this.inviteOptions = null;
+          }
+
           await this.loadGroupsList();
         } catch (err) {
           console.error('[Splash] load error', err);
@@ -423,23 +586,45 @@ Page({
     const dataChanged = this._hasDataChanged(categories, recipes);
     
     if (dataChanged || rankingChanged) {
-      const groupedRecipes = dataChanged ? this.buildGroupedRecipes(categories, recipes, '') : this.data.groupedRecipes;
+      // 初始渲染时把 cloud:// 路径替换为空字符串，WXML 会 fallback 到默认占位图（避免路径报错）
+      // 异步解析完成后再更新为真实的 https:// 链接
+      let displayRecipes = recipes;
+      let displayRanking = topRanking;
+      if (dataChanged) {
+        displayRecipes = recipes.map(r => ({
+          ...r,
+          image: imageUtil.maskCloudUrl(r.image)
+        }));
+      }
+      if (rankingChanged) {
+        displayRanking = topRanking.map(c => ({
+          ...c,
+          chefAvatar: imageUtil.maskCloudUrl(c.chefAvatar)
+        }));
+      }
+      const groupedRecipes = dataChanged ? this.buildGroupedRecipes(categories, displayRecipes, '') : this.data.groupedRecipes;
       this.setData({
         ...(dataChanged ? {
           categories,
           activeCategoryId,
           activeCategoryName,
-          recipes,
+          recipes: displayRecipes,
           groupedRecipes
         } : {}),
         cart,
         cartCount,
         cartTotal,
-        chefRanking: topRanking,
+        chefRanking: displayRanking,
         chefRankingTotalStars: totalStars
       }, () => {
         if (dataChanged) {
           this.filterRecipes();
+        }
+        // 异步解析菜谱图片和头像（云存储权限限制，需通过云函数转临时链接）
+        if (dataChanged && recipes.length > 0) {
+          this._resolveRecipeImages(recipes, topRanking);
+        } else if (rankingChanged) {
+          this._resolveRankingAvatars(topRanking);
         }
       });
     } else {
@@ -449,6 +634,47 @@ Page({
         cartCount,
         cartTotal
       });
+    }
+  },
+
+  // 异步解析所有菜谱的 cloud:// 图片为临时下载链接
+  async _resolveRecipeImages(originalRecipes, originalRanking) {
+    try {
+      // 解析菜谱封面图（使用原始数据，不是被 mask 过的 display 数据）
+      const resolvedRecipes = await imageUtil.resolveRecipeImages(originalRecipes);
+      const resolvedGrouped = this.data.groupedRecipes.map(g => ({
+        ...g,
+        recipes: g.recipes.map(r => {
+          const found = resolvedRecipes.find(rr => rr.id === r.id);
+          return found || r;
+        })
+      }));
+
+      // 解析厨师排行榜头像
+      const resolvedRanking = await imageUtil.resolveAvatars(originalRanking, 'chefAvatar');
+
+      // 回写到 db 缓存（只回写成功解析为 https:// 的）
+      db.updateRecipeImagesInCache(resolvedRecipes);
+
+      this.setData({
+        recipes: resolvedRecipes,
+        groupedRecipes: resolvedGrouped,
+        chefRanking: resolvedRanking
+      }, () => {
+        this.filterRecipes();
+      });
+    } catch (e) {
+      console.warn('[kitchen] 解析图片失败', e);
+    }
+  },
+
+  // 单独解析排行榜头像
+  async _resolveRankingAvatars(originalRanking) {
+    try {
+      const resolvedRanking = await imageUtil.resolveAvatars(originalRanking, 'chefAvatar');
+      this.setData({ chefRanking: resolvedRanking });
+    } catch (e) {
+      console.warn('[kitchen] 解析排行榜头像失败', e);
     }
   },
 
@@ -480,8 +706,10 @@ Page({
     if (oldCategories.length !== newCategories.length) return true;
     if (oldRecipes.length !== newRecipes.length) return true;
 
-    // 2. 逐项比较菜谱关键字段（覆盖改名/改价/改图/改状态/改分类等场景）
-    const recipeKeys = ['id', 'name', 'price', 'image', 'status', 'categoryId', 'desc'];
+    // 2. 逐项比较菜谱关键字段（覆盖改名/改价/改状态/改分类等场景）
+    // 注意：不比较 image 字段，因为 image 会在 cloud:// 和 https:// 之间变化（图片解析逻辑）
+    // 这是页面内部的格式转换，不是数据真正的变更
+    const recipeKeys = ['id', 'name', 'price', 'status', 'categoryId', 'desc'];
     for (let i = 0; i < newRecipes.length; i++) {
       const oldR = oldRecipes[i];
       const newR = newRecipes[i];
@@ -1091,6 +1319,20 @@ Page({
     if (stepTimerInterval) {
       clearInterval(stepTimerInterval);
       stepTimerInterval = null;
+    }
+    // 异步解析菜谱详情中的步骤图
+    this._resolveRecipeDetail(recipe);
+  },
+
+  async _resolveRecipeDetail(recipe) {
+    try {
+      const resolved = await imageUtil.resolveRecipeDetail(recipe);
+      // 只有当前选中的还是同一个菜谱时才更新
+      if (this.data.selectedRecipe && this.data.selectedRecipe.id === resolved.id) {
+        this.setData({ selectedRecipe: resolved });
+      }
+    } catch (e) {
+      console.warn('[kitchen] 解析菜谱详情图片失败', e);
     }
   },
 

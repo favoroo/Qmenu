@@ -34,6 +34,32 @@ exports.main = async (event, context) => {
         ...userRes.data[0],
         ...updateData
       }
+
+      // 同步更新该用户所在的群组里的成员头像和昵称
+      const groupsRes = await db.collection('groups').where({
+        'members.openid': openid
+      }).get()
+
+      if (groupsRes.data.length > 0) {
+        for (const group of groupsRes.data) {
+          const updatedMembers = group.members.map(m => {
+            if (m.openid === openid) {
+              return {
+                ...m,
+                nickName: nickName !== undefined ? nickName : m.nickName,
+                avatarUrl: avatarUrl !== undefined ? avatarUrl : m.avatarUrl
+              }
+            }
+            return m
+          })
+          await db.collection('groups').doc(group._id).update({
+            data: {
+              members: updatedMembers
+            }
+          })
+        }
+      }
+
       return {
         success: true,
         userInfo: updatedUser

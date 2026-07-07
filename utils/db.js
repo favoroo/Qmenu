@@ -532,6 +532,68 @@ const db = {
     this.saveToLocalCache(currentGroupId);
   },
 
+  /**
+   * 仅更新本地缓存中菜谱的 image 字段（用于图片解析后回写，避免乒乓效应）
+   * 不触发云端同步，不保存到本地持久化缓存（因为临时URL会过期）
+   * @param {Object[]} resolvedRecipes - 已解析图片URL的菜谱数组
+   */
+  updateRecipeImagesInCache(resolvedRecipes) {
+    if (!cloudCache.recipes || !resolvedRecipes) return;
+    const map = {};
+    resolvedRecipes.forEach(r => {
+      // 只回写成功解析为 https:// 的 URL，跳过空字符串和 cloud://
+      if (r.image && typeof r.image === 'string' && r.image.startsWith('https://')) {
+        map[r.id] = r.image;
+      }
+    });
+    for (let i = 0; i < cloudCache.recipes.length; i++) {
+      const id = cloudCache.recipes[i].id;
+      if (map[id] && map[id] !== cloudCache.recipes[i].image) {
+        cloudCache.recipes[i].image = map[id];
+      }
+    }
+    this.saveToLocalCache(currentGroupId);
+  },
+
+  /**
+   * 仅更新本地缓存中订单的 image 字段（用于图片解析后回写）
+   * 不触发云端同步
+   * @param {Object[]} resolvedOrders - 已解析图片URL的订单数组
+   */
+  updateOrderImagesInCache(resolvedOrders) {
+    if (!cloudCache.orders || !resolvedOrders) return;
+    const map = {};
+    resolvedOrders.forEach(o => { map[o.id] = o; });
+    for (let i = 0; i < cloudCache.orders.length; i++) {
+      const id = cloudCache.orders[i].id;
+      const resolved = map[id];
+      if (resolved) {
+        // 只更新成功解析为 https:// 的头像和图片
+        if (resolved.chefAvatar && typeof resolved.chefAvatar === 'string' && resolved.chefAvatar.startsWith('https://')) {
+          cloudCache.orders[i].chefAvatar = resolved.chefAvatar;
+        }
+        if (resolved.userAvatar && typeof resolved.userAvatar === 'string' && resolved.userAvatar.startsWith('https://')) {
+          cloudCache.orders[i].userAvatar = resolved.userAvatar;
+        }
+        if (resolved.items && cloudCache.orders[i].items) {
+          const itemMap = {};
+          resolved.items.forEach(it => {
+            if (it.image && typeof it.image === 'string' && it.image.startsWith('https://')) {
+              itemMap[it.recipeId] = it.image;
+            }
+          });
+          for (let j = 0; j < cloudCache.orders[i].items.length; j++) {
+            const rid = cloudCache.orders[i].items[j].recipeId;
+            if (itemMap[rid]) {
+              cloudCache.orders[i].items[j].image = itemMap[rid];
+            }
+          }
+        }
+      }
+    }
+    this.saveToLocalCache(currentGroupId);
+  },
+
   async addRecipe(recipe) {
     if (!currentGroupId) return null;
     const list = this.getRecipes();

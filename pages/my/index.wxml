@@ -31,16 +31,54 @@
       </view>
     </view>
 
-    <!-- General Settings Section -->
-    <view class="menu-section card">
-      <view class="section-title">系统选项</view>
+  </view>
 
-      <view class="menu-item flex-row justify-between align-center" bindtap="showAboutUs">
-        <view class="menu-item-left flex-row align-center">
-          <image class="menu-item-icon" src="/assets/images/icon_about.svg"></image>
-          <text>关于 Q 菜单</text>
+  <!-- 3. My Group Section -->
+  <view class="my-groups-wrapper">
+    <!-- 有当前群组 -->
+    <view class="menu-section card my-group-card" wx:if="{{currentGroup}}">
+      <view class="section-title">我的群组</view>
+
+      <view class="current-group-row" bindtap="goGroupManage">
+        <view class="group-line1 flex-row align-center justify-between">
+          <view class="flex-row align-center">
+            <text class="my-group-name">{{currentGroup.name}}</text>
+            <text class="role-tag {{isAdmin ? 'owner' : 'member'}}">{{isAdmin ? '群主' : '协作者'}}</text>
+          </view>
+          <view class="arrow-right"></view>
         </view>
-        <view class="arrow-right"></view>
+        <view class="group-line2 flex-row align-center">
+          <text class="meta-text">{{currentGroup.members.length}}/20 成员</text>
+          <text class="meta-dot">·</text>
+          <text class="meta-text">邀请码：<text class="invite-code-val">{{currentGroup.inviteCode}}</text></text>
+        </view>
+      </view>
+
+      <button class="btn-share-group flex-row align-center justify-center" open-type="share">
+        <text class="share-icon">📤</text>
+        <text>邀请好友加入群组</text>
+      </button>
+
+      <view class="group-action-row flex-row">
+        <button class="btn-secondary group-action-btn" bindtap="openJoinModal">加入其他群组</button>
+        <view class="manage-entry flex-row justify-between align-center" bindtap="goGroupManage">
+          <text>管理群组</text>
+          <view class="arrow-right"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 无群组 -->
+    <view class="menu-section card my-group-card" wx:else>
+      <view class="section-title">我的群组</view>
+      <view class="no-group-box flex-col align-center">
+        <text class="no-group-icon">👥</text>
+        <text class="no-group-text">您还未加入任何群组</text>
+        <text class="no-group-desc">创建专属菜单群组，或输入好友邀请码加入</text>
+        <view class="no-group-actions flex-row">
+          <button class="btn-secondary" bindtap="openJoinModal">加入群组</button>
+          <button class="btn-primary" bindtap="goGroupManage">新建群组</button>
+        </view>
       </view>
     </view>
   </view>
@@ -49,5 +87,22 @@
   <view class="brand-footer flex-col align-center">
     <view class="brand-text">Q 菜单 © 2026</view>
     <view class="brand-subtext">世间万物，唯有美食不可辜负</view>
+  </view>
+
+  <!-- 4. Join Group Modal -->
+  <view class="modal-overlay" wx:if="{{showJoinModal}}" bindtap="closeJoinModal"></view>
+  <view class="join-modal-card flex-col align-center {{showJoinModal ? 'scale-in' : ''}}" wx:if="{{showJoinModal}}">
+    <view class="modal-close" bindtap="closeJoinModal">×</view>
+    <view class="modal-title">加入群组</view>
+    <view class="join-modal-subtitle">请输入好友分享的 6 位邀请码</view>
+    <view class="join-input-row">
+      <input class="join-code-input" type="text" maxlength="6"
+        placeholder="输入邀请码" value="{{joinInviteCode}}"
+        bindinput="onInputJoinCode" confirm-type="done" bindconfirm="onConfirmJoinGroup"/>
+    </view>
+    <view class="join-modal-actions flex-row">
+      <button class="btn-modal-cancel flex-1" bindtap="closeJoinModal">取消</button>
+      <button class="btn-modal-confirm flex-1" bindtap="onConfirmJoinGroup">加入</button>
+    </view>
   </view>
 </view>

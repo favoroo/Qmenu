@@ -1,5 +1,6 @@
 const db = require('../../utils/db.js');
 const subscribe = require('../../utils/subscribe.js');
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -125,15 +126,80 @@ Page({
     const subscribedAt = wx.getStorageSync('chefNotifySubscribedAt') || 0;
     const showBanner = this.data.activeTab === 'kitchen' && (Date.now() - subscribedAt > 7 * 24 * 3600 * 1000);
     
+    // 初始渲染时把 cloud:// 路径替换为空字符串（WXML fallback 到默认占位图）
+    // 异步解析完成后更新为真实 https:// 链接
+    const displayOrders = ordersWithRating.map(o => {
+      const newOrder = { ...o };
+      newOrder.chefAvatar = imageUtil.maskCloudUrl(o.chefAvatar);
+      newOrder.userAvatar = imageUtil.maskCloudUrl(o.userAvatar);
+      if (o.items) {
+        newOrder.items = o.items.map(it => ({
+          ...it,
+          image: imageUtil.maskCloudUrl(it.image)
+        }));
+      }
+      return newOrder;
+    });
+
     this.setData({
-      orders: ordersWithRating,
+      orders: displayOrders,
       isAdmin: isAdmin,
       myOpenid: myOpenid,
       showSubscribeBanner: showBanner
     }, () => {
       this.applyTabFilter();
       this.loadRanking();
+      // 异步解析订单中的图片（菜谱图、厨师头像）
+      this._resolveOrderImages(ordersWithRating);
     });
+  },
+
+  // 异步解析订单中的 cloud:// 图片为临时下载链接
+  async _resolveOrderImages(orders) {
+    if (!orders || orders.length === 0) return;
+    try {
+      // 收集所有需要解析的 cloud:// fileID
+      const fileIDs = [];
+      orders.forEach(o => {
+        if (imageUtil.isCloudFileURL(o.chefAvatar)) fileIDs.push(o.chefAvatar);
+        if (imageUtil.isCloudFileURL(o.userAvatar)) fileIDs.push(o.userAvatar);
+        (o.items || []).forEach(item => {
+          if (imageUtil.isCloudFileURL(item.image)) fileIDs.push(item.image);
+        });
+      });
+      if (fileIDs.length === 0) return;
+
+      const map = await imageUtil.resolveImages(fileIDs);
+
+      // 只替换成功解析为 https:// 的
+      const resolvedOrders = orders.map(o => {
+        const newOrder = { ...o };
+        if (o.chefAvatar && imageUtil.isCloudFileURL(o.chefAvatar) && map[o.chefAvatar] && map[o.chefAvatar].startsWith('https://')) {
+          newOrder.chefAvatar = map[o.chefAvatar];
+        }
+        if (o.userAvatar && imageUtil.isCloudFileURL(o.userAvatar) && map[o.userAvatar] && map[o.userAvatar].startsWith('https://')) {
+          newOrder.userAvatar = map[o.userAvatar];
+        }
+        if (o.items) {
+          newOrder.items = o.items.map(item => {
+            if (item.image && imageUtil.isCloudFileURL(item.image) && map[item.image] && map[item.image].startsWith('https://')) {
+              return { ...item, image: map[item.image] };
+            }
+            return { ...item };
+          });
+        }
+        return newOrder;
+      });
+
+      // 回写到 db 缓存（只回写成功解析的）
+      db.updateOrderImagesInCache(resolvedOrders);
+
+      this.setData({ orders: resolvedOrders }, () => {
+        this.applyTabFilter();
+      });
+    } catch (e) {
+      console.warn('[order] 解析订单图片失败', e);
+    }
   },
 
   // Filter orders based on active tab
@@ -300,12 +366,33 @@ Page({
     const totalRatings = periodRatings.length;
     const totalStars = periodRatings.reduce((sum, r) => sum + (r.stars || 0), 0);
 
+    // 初始渲染时把 cloud:// 头像替换为空字符串
+    const topRanking = ranking.slice(0, 5);
+    const displayRanking = topRanking.map(c => ({
+      ...c,
+      chefAvatar: imageUtil.maskCloudUrl(c.chefAvatar)
+    }));
+
     this.setData({
-      ranking: ranking.slice(0, 5),
+      ranking: displayRanking,
       rankingTotalChefs: ranking.length,
       totalRatings: totalRatings,
       totalStars: totalStars
     });
+
+    // 异步解析排行榜厨师头像
+    if (ranking.length > 0) {
+      this._resolveRankingAvatars(topRanking);
+    }
+  },
+
+  async _resolveRankingAvatars(ranking) {
+    try {
+      const resolved = await imageUtil.resolveAvatars(ranking.slice(0, 5), 'chefAvatar');
+      this.setData({ ranking: resolved });
+    } catch (e) {
+      console.warn('[order] 解析排行榜头像失败', e);
+    }
   },
 
   switchRankingPeriod(e) {
@@ -436,6 +523,19 @@ Page({
       formattedTimeLeft: '00:00'
     });
     this.stopStepTimer();
+    // 异步解析菜谱详情中的步骤图
+    this._resolveOrderRecipeDetail(recipe);
+  },
+
+  async _resolveOrderRecipeDetail(recipe) {
+    try {
+      const resolved = await imageUtil.resolveRecipeDetail(recipe);
+      if (this.data.selectedRecipe && this.data.selectedRecipe.id === resolved.id) {
+        this.setData({ selectedRecipe: resolved });
+      }
+    } catch (e) {
+      console.warn('[order] 解析菜谱详情图片失败', e);
+    }
   },
 
   closeRecipeDetail() {
