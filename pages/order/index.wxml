@@ -122,7 +122,7 @@
       <!-- Card Summary -->
       <view class="order-summary flex-row justify-between align-center">
         <view class="share-info-tag" wx:if="{{item.isFromShare}}">
-          <icon type="success" size="12" color="#007AFF" style="margin-right: 6rpx;"></icon>
+          <icon type="success" size="12" color="#005BCB" style="margin-right: 6rpx;"></icon>
           <text>来自好友拼单</text>
         </view>
         <view class="total-text flex-1 text-right">

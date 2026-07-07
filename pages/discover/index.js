@@ -81,7 +81,7 @@ Page({
       content: `您已成功订阅文章《${title}》，食谱详情与详细步骤已发送至您的消息助手！`,
       showCancel: false,
       confirmText: '我知道了',
-      confirmColor: '#007AFF'
+      confirmColor: '#005BCB'
     });
   }
 });

@@ -44,7 +44,7 @@
   font-size: 18rpx;
   color: var(--primary-color);
   background-color: var(--primary-light);
-  border: 1rpx solid rgba(0, 122, 255, 0.15);
+  border: 1rpx solid rgba(0, 91, 203, 0.15);
   padding: 4rpx 12rpx;
   border-radius: 20rpx;
   margin-left: 12rpx;
@@ -100,13 +100,13 @@
 .dish-category-card.drop-target-cat {
   border-color: var(--primary-color);
   background-color: var(--primary-light);
-  box-shadow: 0 0 0 4rpx rgba(0, 122, 255, 0.12);
+  box-shadow: 0 0 0 4rpx rgba(0, 91, 203, 0.12);
 }
 
 .dish-category-card.drop-target {
   border-color: var(--primary-color);
   background-color: var(--primary-light);
-  box-shadow: 0 0 0 4rpx rgba(0, 122, 255, 0.08);
+  box-shadow: 0 0 0 4rpx rgba(0, 91, 203, 0.08);
 }
 
 /* Category Grip Handle */
@@ -209,7 +209,7 @@
   font-size: 22rpx;
   color: var(--primary-color);
   background-color: var(--primary-light);
-  border: 1rpx solid rgba(0, 122, 255, 0.2);
+  border: 1rpx solid rgba(0, 91, 203, 0.2);
   padding: 8rpx 20rpx;
   border-radius: 30rpx;
   font-weight: 500;
@@ -342,7 +342,7 @@
   border-radius: 3rpx;
   z-index: 9998;
   pointer-events: none;
-  box-shadow: 0 0 12rpx rgba(0, 122, 255, 0.35);
+  box-shadow: 0 0 12rpx rgba(0, 91, 203, 0.35);
   transform: translateY(-3rpx);
 }
 
@@ -356,7 +356,7 @@
   border-radius: 50%;
   background-color: var(--primary-color);
   transform: translateY(-50%);
-  box-shadow: 0 0 6rpx rgba(0, 122, 255, 0.35);
+  box-shadow: 0 0 6rpx rgba(0, 91, 203, 0.35);
 }
 
 .drop-indicator-line::before { left: -7rpx; }

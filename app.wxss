@@ -7,11 +7,11 @@ page {
   color: #1D1D1F;
   background-color: #F2F2F7;
   box-sizing: border-box;
-  --primary-color: #007AFF;
-  --primary-light: #E8F2FF;
-  --primary-dark: #0056CC;
-  --primary-soft: #B4D7FF;
-  --primary-tint: rgba(0, 122, 255, 0.08);
+  --primary-color: #005BCB;
+  --primary-light: #EBF2FB;
+  --primary-dark: #004CAB;
+  --primary-soft: #9CC4FA;
+  --primary-tint: rgba(0, 91, 203, 0.08);
   --accent-color: #D4A373;
   --danger-color: #FF3B30;
   --warning-color: #FF9500;

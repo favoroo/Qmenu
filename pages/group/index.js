@@ -412,7 +412,7 @@ Page({
     wx.showModal({
       title: '转让群主',
       content: `确定将群主转让给「${memberName}」吗？转让后您将变为普通成员，不再拥有管理权限。`,
-      confirmColor: '#007AFF',
+      confirmColor: '#005BCB',
       success(res) {
         if (res.confirm) {
           self.doTransferOwner(newOwnerOpenid);

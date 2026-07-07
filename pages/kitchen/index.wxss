@@ -90,7 +90,7 @@
 
 .category-item.active {
   color: var(--primary-color);
-  background-color: rgba(0, 122, 255, 0.08);
+  background-color: var(--primary-tint);
   font-weight: 600;
 }
 
@@ -313,7 +313,7 @@
 .floating-random-btn:active {
   background: linear-gradient(135deg, rgba(240, 245, 255, 0.95) 0%, rgba(225, 235, 255, 0.95) 100%);
   border-color: rgba(0,0,0,0.12);
-  box-shadow: 0 4rpx 16rpx rgba(0, 122, 255, 0.1);
+  box-shadow: 0 4rpx 16rpx rgba(0, 91, 203, 0.1);
   opacity: 0.95;
 }
 
@@ -468,7 +468,7 @@
   width: auto !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
-  background: #007AFF !important;
+  background: var(--primary-color) !important;
   color: #ffffff !important;
   font-size: 26rpx !important;
   font-weight: bold !important;
@@ -733,7 +733,7 @@
   background-color: var(--primary-light);
   border-radius: 32rpx;
   padding: 32rpx;
-  border: 1rpx solid rgba(0, 122, 255, 0.12);
+  border: 1rpx solid rgba(0, 91, 203, 0.12);
   margin-bottom: 40rpx;
   min-height: 340rpx;
   display: flex;
@@ -1210,7 +1210,7 @@
 .interactive-timer-btn {
   background-color: var(--primary-light);
   color: var(--primary-color);
-  border: 1rpx solid rgba(0, 122, 255, 0.25);
+  border: 1rpx solid rgba(0, 91, 203, 0.25);
   padding: 0 18rpx;
   height: 40rpx;
   border-radius: 20rpx;
@@ -1804,14 +1804,14 @@
   width: 16rpx;
   height: 16rpx;
   border-radius: 50%;
-  background-color: var(--primary-color, #007AFF);
+  background-color: var(--primary-color, #005BCB);
   margin: 0 8rpx;
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
 .dot-1 {
   animation-delay: -0.32s;
-  background-color: var(--primary-color, #007AFF);
+  background-color: var(--primary-color, #005BCB);
 }
 
 .dot-2 {

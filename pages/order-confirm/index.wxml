@@ -17,7 +17,7 @@
   <scroll-view class="confirm-scroll" scroll-y>
     <!-- 1. Share banner -->
     <view class="share-banner flex-row align-center" wx:if="{{isFromShare}}">
-      <icon type="success" size="16" color="#007AFF" style="margin-right: 16rpx;"></icon>
+      <icon type="success" size="16" color="#005BCB" style="margin-right: 16rpx;"></icon>
       <text class="share-banner-text">您正在加入好友「{{sharerName}}」的拼单中！</text>
     </view>
 

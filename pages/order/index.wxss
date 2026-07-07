@@ -45,14 +45,14 @@
 }
 
 .tab-item-hover {
-  background-color: rgba(0, 122, 255, 0.03);
+  background-color: rgba(0, 91, 203, 0.03);
   opacity: 0.8;
 }
 
 /* Subscribe Banner */
 .subscribe-banner {
   background-color: var(--primary-light);
-  border: 1rpx solid rgba(0, 122, 255, 0.18);
+  border: 1rpx solid rgba(0, 91, 203, 0.18);
   border-radius: 16rpx;
   padding: 16rpx 24rpx;
   margin: 16rpx 24rpx 0 24rpx;
@@ -148,7 +148,7 @@
 .order-status-badge.pending {
   color: var(--primary-color);
   background-color: var(--primary-light);
-  border: 1rpx solid rgba(0, 122, 255, 0.22);
+  border: 1rpx solid rgba(0, 91, 203, 0.22);
 }
 
 .order-status-badge.done {
@@ -373,7 +373,7 @@
 /* Highlight for orders assigned to me (kitchen tab) */
 .order-card.mine-to-cook {
   border-left: 6rpx solid var(--primary-color);
-  background-color: rgba(0, 122, 255, 0.04);
+  background-color: rgba(0, 91, 203, 0.04);
 }
 
 /* Empty Orders view */
@@ -635,7 +635,7 @@
 .interactive-timer-btn {
   background-color: var(--primary-light);
   color: var(--primary-color);
-  border: 1rpx solid rgba(0, 122, 255, 0.25);
+  border: 1rpx solid rgba(0, 91, 203, 0.25);
   padding: 0 18rpx;
   height: 40rpx;
   border-radius: 20rpx;
