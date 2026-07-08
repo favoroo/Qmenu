@@ -361,3 +361,150 @@
 
 .drop-indicator-line::before { left: -7rpx; }
 .drop-indicator-line::after { right: -7rpx; }
+
+/* ============ Multi-select Mode Styles ============ */
+
+/* Checkbox container for rows */
+.row-checkbox-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 40rpx;
+  flex-shrink: 0;
+}
+
+/* Custom Checkbox */
+.checkbox {
+  width: 36rpx;
+  height: 36rpx;
+  border: 3rpx solid var(--text-light);
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  background-color: transparent;
+}
+
+.checkbox.checked {
+  border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.checkbox.checked::after {
+  content: '';
+  position: absolute;
+  left: 10rpx;
+  top: 4rpx;
+  width: 8rpx;
+  height: 14rpx;
+  border: solid #ffffff;
+  border-width: 0 4rpx 4rpx 0;
+  transform: rotate(45deg);
+}
+
+/* Dish row selections */
+.dish-row.row-selecting {
+  padding-left: 8rpx;
+}
+
+.dish-row.row-selected {
+  background-color: rgba(0, 91, 203, 0.04);
+  border-radius: var(--radius-sm);
+  padding-left: 16rpx;
+  padding-right: 16rpx;
+}
+
+/* Batch Action Bar at Bottom */
+.batch-action-bar {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: calc(30rpx + env(safe-area-inset-bottom));
+  height: 110rpx;
+  background-color: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 30rpx;
+  box-shadow: 0 12rpx 40rpx rgba(0, 0, 0, 0.15);
+  border: 1rpx solid rgba(255, 255, 255, 0.8);
+  padding: 0 32rpx;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slide-up-bar 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slide-up-bar {
+  from {
+    transform: translateY(130%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.batch-action-left {
+  gap: 20rpx;
+}
+
+.batch-select-all {
+  gap: 12rpx;
+  padding: 10rpx 0;
+}
+
+.select-all-text {
+  font-size: 26rpx;
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.selected-count {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  border-left: 2rpx solid var(--border-color);
+  padding-left: 20rpx;
+}
+
+.batch-action-right {
+  gap: 16rpx;
+}
+
+.batch-btn {
+  font-size: 26rpx;
+  font-weight: 600;
+  padding: 16rpx 36rpx;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  line-height: 1.2;
+}
+
+.batch-btn-cancel {
+  color: var(--text-sub);
+  background-color: var(--bg-light);
+}
+
+.batch-btn-cancel:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.batch-btn-delete {
+  color: #ffffff;
+  background-color: var(--danger-color);
+  box-shadow: 0 4rpx 12rpx rgba(255, 59, 48, 0.2);
+}
+
+.batch-btn-delete.disabled {
+  opacity: 0.35;
+  background-color: #E5E5EA;
+  color: var(--text-light);
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.batch-btn-delete:not(.disabled):active {
+  transform: translateY(1rpx);
+  opacity: 0.9;
+}

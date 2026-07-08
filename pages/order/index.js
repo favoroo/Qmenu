@@ -126,16 +126,16 @@ Page({
     const subscribedAt = wx.getStorageSync('chefNotifySubscribedAt') || 0;
     const showBanner = this.data.activeTab === 'kitchen' && (Date.now() - subscribedAt > 7 * 24 * 3600 * 1000);
     
-    // 初始渲染时把 cloud:// 路径替换为空字符串（WXML fallback 到默认占位图）
+    // 初始渲染时：优先使用本地缓存中未过期的https URL，否则将cloud://替换为空字符串（WXML fallback到默认图）
     // 异步解析完成后更新为真实 https:// 链接
     const displayOrders = ordersWithRating.map(o => {
       const newOrder = { ...o };
-      newOrder.chefAvatar = imageUtil.maskCloudUrl(o.chefAvatar);
-      newOrder.userAvatar = imageUtil.maskCloudUrl(o.userAvatar);
+      newOrder.chefAvatar = imageUtil.getCachedUrlOrEmpty(o.chefAvatar);
+      newOrder.userAvatar = imageUtil.getCachedUrlOrEmpty(o.userAvatar);
       if (o.items) {
         newOrder.items = o.items.map(it => ({
           ...it,
-          image: imageUtil.maskCloudUrl(it.image)
+          image: imageUtil.getCachedUrlOrEmpty(it.image)
         }));
       }
       return newOrder;
@@ -171,19 +171,20 @@ Page({
 
       const map = await imageUtil.resolveImages(fileIDs);
 
-      // 只替换成功解析为 https:// 的
+      // 替换成功解析为 https:// 的，失败的 cloud:// 设为空字符串（WXML fallback到默认图）
       const resolvedOrders = orders.map(o => {
         const newOrder = { ...o };
-        if (o.chefAvatar && imageUtil.isCloudFileURL(o.chefAvatar) && map[o.chefAvatar] && map[o.chefAvatar].startsWith('https://')) {
-          newOrder.chefAvatar = map[o.chefAvatar];
+        if (o.chefAvatar && imageUtil.isCloudFileURL(o.chefAvatar)) {
+          newOrder.chefAvatar = (map[o.chefAvatar] && map[o.chefAvatar].startsWith('https://')) ? map[o.chefAvatar] : '';
         }
-        if (o.userAvatar && imageUtil.isCloudFileURL(o.userAvatar) && map[o.userAvatar] && map[o.userAvatar].startsWith('https://')) {
-          newOrder.userAvatar = map[o.userAvatar];
+        if (o.userAvatar && imageUtil.isCloudFileURL(o.userAvatar)) {
+          newOrder.userAvatar = (map[o.userAvatar] && map[o.userAvatar].startsWith('https://')) ? map[o.userAvatar] : '';
         }
         if (o.items) {
           newOrder.items = o.items.map(item => {
-            if (item.image && imageUtil.isCloudFileURL(item.image) && map[item.image] && map[item.image].startsWith('https://')) {
-              return { ...item, image: map[item.image] };
+            if (item.image && imageUtil.isCloudFileURL(item.image)) {
+              const resolved = map[item.image];
+              return { ...item, image: (resolved && resolved.startsWith('https://')) ? resolved : '' };
             }
             return { ...item };
           });
@@ -366,11 +367,11 @@ Page({
     const totalRatings = periodRatings.length;
     const totalStars = periodRatings.reduce((sum, r) => sum + (r.stars || 0), 0);
 
-    // 初始渲染时把 cloud:// 头像替换为空字符串
+    // 初始渲染时：优先使用缓存URL，cloud://则替换为空字符串
     const topRanking = ranking.slice(0, 5);
     const displayRanking = topRanking.map(c => ({
       ...c,
-      chefAvatar: imageUtil.maskCloudUrl(c.chefAvatar)
+      chefAvatar: imageUtil.getCachedUrlOrEmpty(c.chefAvatar)
     }));
 
     this.setData({

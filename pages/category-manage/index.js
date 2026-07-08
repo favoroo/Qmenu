@@ -24,7 +24,13 @@ Page({
     dropInsertIndex: -1,
     dropIndicatorY: 0,
     categoryRects: [],
-    dishRowRects: []
+    dishRowRects: [],
+
+    // ===== Multi-select batch mode =====
+    isMultiSelectMode: false,
+    selectedRecipeIds: {},
+    selectedCount: 0,
+    isAllSelected: false
   },
 
   onShow() {
@@ -176,6 +182,7 @@ Page({
 
   // ===== Category Drag Sort =====
   onCategoryLongPress(e) {
+    if (this.data.isMultiSelectMode) return;
     const category = e.currentTarget.dataset.category;
     if (!category) return;
     const touch = e.touches[0];
@@ -277,6 +284,7 @@ Page({
 
   // ===== Recipe drag-to-move =====
   onRecipeLongPress(e) {
+    if (this.data.isMultiSelectMode) return;
     const recipe = e.currentTarget.dataset.recipe;
     const catid = e.currentTarget.dataset.catid;
     const touch = e.touches[0];
@@ -490,5 +498,142 @@ Page({
       icon: 'success'
     });
     wx.vibrateShort({ type: 'light' });
+  },
+
+  // ===== Batch operations handlers =====
+
+  // Long press a recipe row to enter multi-select mode
+  onRecipeRowLongPress(e) {
+    if (this.data.isMultiSelectMode) return;
+
+    const recipe = e.currentTarget.dataset.recipe;
+    if (!recipe) return;
+
+    wx.vibrateShort({ type: 'medium' });
+
+    const selectedRecipeIds = { [recipe.id]: true };
+
+    this.setData({
+      isMultiSelectMode: true,
+      selectedRecipeIds,
+      selectedCount: 1,
+      isAllSelected: this._checkIsAllSelected(selectedRecipeIds)
+    });
+  },
+
+  // Tap a recipe row to toggle selection (only active in multi-select mode)
+  onRecipeRowTap(e) {
+    if (!this.data.isMultiSelectMode) return;
+
+    const recipe = e.currentTarget.dataset.recipe;
+    if (!recipe) return;
+
+    wx.vibrateShort({ type: 'light' });
+
+    const { selectedRecipeIds } = this.data;
+    const isSelected = !!selectedRecipeIds[recipe.id];
+    
+    const nextSelectedRecipeIds = { ...selectedRecipeIds };
+    if (isSelected) {
+      delete nextSelectedRecipeIds[recipe.id];
+    } else {
+      nextSelectedRecipeIds[recipe.id] = true;
+    }
+
+    const count = Object.keys(nextSelectedRecipeIds).length;
+
+    this.setData({
+      selectedRecipeIds: nextSelectedRecipeIds,
+      selectedCount: count,
+      isAllSelected: this._checkIsAllSelected(nextSelectedRecipeIds)
+    });
+  },
+
+  // Toggle select all recipes
+  toggleSelectAll() {
+    const { isAllSelected, categoryCards } = this.data;
+    const nextAllSelected = !isAllSelected;
+    
+    const selectedRecipeIds = {};
+    if (nextAllSelected) {
+      categoryCards.forEach(card => {
+        card.recipes.forEach(r => {
+          selectedRecipeIds[r.id] = true;
+        });
+      });
+    }
+
+    const count = Object.keys(selectedRecipeIds).length;
+
+    wx.vibrateShort({ type: 'medium' });
+
+    this.setData({
+      selectedRecipeIds,
+      isAllSelected: nextAllSelected,
+      selectedCount: count
+    });
+  },
+
+  // Exit multi-select mode
+  exitMultiSelectMode() {
+    this.setData({
+      isMultiSelectMode: false,
+      selectedRecipeIds: {},
+      selectedCount: 0,
+      isAllSelected: false
+    });
+    wx.vibrateShort({ type: 'light' });
+  },
+
+  // Handle batch deletion
+  handleBatchDelete() {
+    const { selectedRecipeIds, selectedCount } = this.data;
+    const idsToDelete = Object.keys(selectedRecipeIds).filter(id => selectedRecipeIds[id]);
+    
+    if (idsToDelete.length === 0) return;
+
+    const self = this;
+    wx.showModal({
+      title: '批量删除菜品',
+      content: `确定要删除这 ${selectedCount} 个菜品吗？此操作不可恢复。`,
+      confirmColor: '#E07A5F',
+      async success(res) {
+        if (res.confirm) {
+          wx.showLoading({ title: '正在删除...' });
+          try {
+            await db.deleteRecipes(idsToDelete);
+            wx.hideLoading();
+            wx.showToast({ title: '删除成功', icon: 'success' });
+            wx.vibrateShort({ type: 'medium' });
+            
+            // Reload and exit multi-select mode
+            self.loadData();
+            self.exitMultiSelectMode();
+          } catch (err) {
+            wx.hideLoading();
+            console.error('批量删除失败', err);
+            wx.showToast({ title: '删除失败，请重试', icon: 'none' });
+          }
+        }
+      }
+    });
+  },
+
+  // Helper: check if all recipes in categoryCards are selected
+  _checkIsAllSelected(selectedMap) {
+    const { categoryCards } = this.data;
+    let totalRecipesCount = 0;
+    let selectedCountInList = 0;
+
+    categoryCards.forEach(card => {
+      card.recipes.forEach(r => {
+        totalRecipesCount++;
+        if (selectedMap[r.id]) {
+          selectedCountInList++;
+        }
+      });
+    });
+
+    return totalRecipesCount > 0 && totalRecipesCount === selectedCountInList;
   }
 });

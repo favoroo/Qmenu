@@ -91,6 +91,9 @@ Page({
   },
 
   async onLoad(options) {
+    // 初始化内部状态
+    this._lastDataVersion = -1;
+
     // Enable share menu
     wx.showShareMenu({
       withShareTicket: true,
@@ -266,11 +269,20 @@ Page({
 
     if (isNew && !app.globalData.hasPromptedProfile) {
       app.globalData.hasPromptedProfile = true;
+      const rawAvatar = (userInfo && userInfo.avatarUrl) || '/assets/images/default_avatar.png';
       this.setData({
         showProfileModal: true,
-        profileAvatarUrl: (userInfo && userInfo.avatarUrl) || '/assets/images/default_avatar.png',
+        profileAvatarUrl: imageUtil.getCachedUrlOrEmpty(rawAvatar),
         profileNickName: (userInfo && !isDefaultNick) ? userInfo.nickName : ''
       });
+      // 异步解析头像
+      if (imageUtil.isCloudFileURL(rawAvatar)) {
+        imageUtil.resolveImage(rawAvatar).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            this.setData({ profileAvatarUrl: resolved });
+          }
+        }).catch(e => console.warn('[kitchen] 解析弹窗头像失败', e));
+      }
     }
   },
 
@@ -582,24 +594,31 @@ Page({
     const totalStars = ranking.reduce((sum, r) => sum + r.totalStars, 0);
     const rankingChanged = JSON.stringify(this.data.chefRanking) !== JSON.stringify(topRanking);
 
-    // 简单差异检测：如果分类和菜谱数据未变化，只更新购物车相关数据
-    const dataChanged = this._hasDataChanged(categories, recipes);
+    // 检测数据是否变化：字段变化 或 云端数据版本更新（initCloudData刷新了数据）
+    const currentDataVersion = db.getDataVersion();
+    const cloudDataRefreshed = currentDataVersion !== this._lastDataVersion;
+    const dataChanged = cloudDataRefreshed || this._hasDataChanged(categories, recipes);
     
     if (dataChanged || rankingChanged) {
-      // 初始渲染时把 cloud:// 路径替换为空字符串，WXML 会 fallback 到默认占位图（避免路径报错）
+      // 更新数据版本标记
+      if (cloudDataRefreshed) {
+        this._lastDataVersion = currentDataVersion;
+      }
+
+      // 初始渲染时：优先使用本地缓存中未过期的https URL（无闪烁），否则将cloud://替换为空字符串
       // 异步解析完成后再更新为真实的 https:// 链接
       let displayRecipes = recipes;
       let displayRanking = topRanking;
       if (dataChanged) {
         displayRecipes = recipes.map(r => ({
           ...r,
-          image: imageUtil.maskCloudUrl(r.image)
+          image: imageUtil.getCachedUrlOrEmpty(r.image)
         }));
       }
       if (rankingChanged) {
         displayRanking = topRanking.map(c => ({
           ...c,
-          chefAvatar: imageUtil.maskCloudUrl(c.chefAvatar)
+          chefAvatar: imageUtil.getCachedUrlOrEmpty(c.chefAvatar)
         }));
       }
       const groupedRecipes = dataChanged ? this.buildGroupedRecipes(categories, displayRecipes, '') : this.data.groupedRecipes;
@@ -707,8 +726,10 @@ Page({
     if (oldRecipes.length !== newRecipes.length) return true;
 
     // 2. 逐项比较菜谱关键字段（覆盖改名/改价/改状态/改分类等场景）
-    // 注意：不比较 image 字段，因为 image 会在 cloud:// 和 https:// 之间变化（图片解析逻辑）
-    // 这是页面内部的格式转换，不是数据真正的变更
+    // 注意：不比较 image 字段：
+    //   - cloudCache 中始终保存 cloud:// 原始URL，页面 data 中保存解析后的 https:// URL
+    //   - 云端数据刷新通过 db.getDataVersion() 版本号检测
+    //   - 本函数只检测业务字段的真正变更
     const recipeKeys = ['id', 'name', 'price', 'status', 'categoryId', 'desc'];
     for (let i = 0; i < newRecipes.length; i++) {
       const oldR = oldRecipes[i];
@@ -1175,7 +1196,14 @@ Page({
 
   // Long press recipe card to show action menu (admin only)
   onRecipeLongPress(e) {
-    if (!this.data.isAdmin) return;
+    if (!this.data.isAdmin) {
+      wx.showToast({
+        title: '仅群主可编辑菜谱',
+        icon: 'none',
+        duration: 1500
+      });
+      return;
+    }
     
     const recipe = e.currentTarget.dataset.recipe;
     const self = this;

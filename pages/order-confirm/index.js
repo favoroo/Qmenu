@@ -41,12 +41,12 @@ Page({
     const items = Object.values(cart);
     const total = db.getCartTotal();
 
-    // 初始渲染时把 cloud:// 图片替换为空字符串（WXML fallback 到默认图）
+    // 初始渲染时：优先使用缓存URL，cloud://则替换为空字符串（WXML fallback到默认图）
     const displayItems = items.map(item => ({
       ...item,
       recipe: {
         ...item.recipe,
-        image: imageUtil.maskCloudUrl(item.recipe.image)
+        image: imageUtil.getCachedUrlOrEmpty(item.recipe.image)
       }
     }));
 
@@ -96,14 +96,14 @@ Page({
         const me = app.globalData.userInfo;
         // 默认选中自己（自做）
         const defaultChef = members.find(m => m.openid === me.openid) || null;
-        // 初始渲染时把 cloud:// 头像替换为空字符串
+        // 初始渲染时：优先使用缓存URL，cloud://则替换为空字符串
         const displayMembers = members.map(m => ({
           ...m,
-          avatarUrl: imageUtil.maskCloudUrl(m.avatarUrl)
+          avatarUrl: imageUtil.getCachedUrlOrEmpty(m.avatarUrl)
         }));
         const displayChef = defaultChef ? {
           ...defaultChef,
-          avatarUrl: imageUtil.maskCloudUrl(defaultChef.avatarUrl)
+          avatarUrl: imageUtil.getCachedUrlOrEmpty(defaultChef.avatarUrl)
         } : null;
         this.setData({ members: displayMembers, selectedChef: displayChef });
         // 异步解析成员头像（使用原始 members 数据）

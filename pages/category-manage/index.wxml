@@ -46,11 +46,22 @@
           wx:for="{{item.recipes}}"
           wx:for-item="recipe"
           wx:key="id"
-          class="dish-row flex-row align-center {{draggingRecipe.id === recipe.id ? 'dragging' : ''}}"
+          class="dish-row flex-row align-center {{draggingRecipe.id === recipe.id ? 'dragging' : ''}} {{isMultiSelectMode ? 'row-selecting' : ''}} {{selectedRecipeIds[recipe.id] ? 'row-selected' : ''}}"
+          bindlongpress="onRecipeRowLongPress"
+          bindtap="onRecipeRowTap"
+          data-recipe="{{recipe}}"
+          data-catid="{{item.id}}"
         >
+          <!-- Checkbox for multi-select -->
+          <view class="row-checkbox-container" wx:if="{{isMultiSelectMode}}">
+            <view class="checkbox {{selectedRecipeIds[recipe.id] ? 'checked' : ''}}"></view>
+          </view>
+
+          <!-- Drag Handle -->
           <view
             class="dish-grip"
-            bindlongpress="onRecipeLongPress"
+            wx:if="{{!isMultiSelectMode}}"
+            catchlongpress="onRecipeLongPress"
             catchtouchmove="onRecipeTouchMove"
             catchtouchend="onRecipeTouchEnd"
             data-recipe="{{recipe}}"
@@ -63,17 +74,20 @@
           <image class="dish-thumb" src="{{recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
           <text class="dish-name flex-1 text-ellipsis">{{recipe.name}}</text>
           <text class="dish-price">¥{{recipe.price}}</text>
-          <view
-            class="dish-edit-btn"
-            catchtap="handleEditRecipe"
-            data-id="{{recipe.id}}"
-          >编辑</view>
-          <view
-            class="dish-delete-btn"
-            catchtap="handleDeleteRecipe"
-            data-id="{{recipe.id}}"
-            data-name="{{recipe.name}}"
-          >删除</view>
+          
+          <block wx:if="{{!isMultiSelectMode}}">
+            <view
+              class="dish-edit-btn"
+              catchtap="handleEditRecipe"
+              data-id="{{recipe.id}}"
+            >编辑</view>
+            <view
+              class="dish-delete-btn"
+              catchtap="handleDeleteRecipe"
+              data-id="{{recipe.id}}"
+              data-name="{{recipe.name}}"
+            >删除</view>
+          </block>
         </view>
       </block>
 
@@ -133,7 +147,23 @@
 ></view>
 
 <!-- Floating Add Recipe Button -->
-<view class="fab-add-recipe" bindtap="handleAddRecipe">
+<view class="fab-add-recipe" bindtap="handleAddRecipe" wx:if="{{!isMultiSelectMode}}">
   <text class="fab-plus">+</text>
   <text class="fab-text">新建菜品</text>
+</view>
+
+<!-- Batch operations action bar -->
+<view class="batch-action-bar flex-row align-center justify-between" wx:if="{{isMultiSelectMode}}">
+  <view class="batch-action-left flex-row align-center">
+    <view class="batch-select-all flex-row align-center" bindtap="toggleSelectAll">
+      <view class="checkbox {{isAllSelected ? 'checked' : ''}}"></view>
+      <text class="select-all-text">全选</text>
+    </view>
+    <text class="selected-count">已选 {{selectedCount}} 项</text>
+  </view>
+  
+  <view class="batch-action-right flex-row align-center">
+    <view class="batch-btn batch-btn-cancel" bindtap="exitMultiSelectMode">取消</view>
+    <view class="batch-btn batch-btn-delete {{selectedCount === 0 ? 'disabled' : ''}}" bindtap="handleBatchDelete">删除</view>
+  </view>
 </view>

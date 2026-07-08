@@ -76,10 +76,10 @@ Page({
       if (res.result && res.result.success) {
         const group = res.result.group;
         const myOpenid = this.data.myOpenid;
-        // 初始渲染时把 cloud:// 头像替换为空字符串
+        // 初始渲染时：优先使用缓存URL，cloud://则替换为空字符串
         const displayMembers = (group.members || []).map(m => ({
           ...m,
-          avatarUrl: imageUtil.maskCloudUrl(m.avatarUrl)
+          avatarUrl: imageUtil.getCachedUrlOrEmpty(m.avatarUrl)
         }));
         const displayGroup = { ...group, members: displayMembers };
         this.setData({

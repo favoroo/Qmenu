@@ -1,4 +1,5 @@
 const app = getApp();
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -11,9 +12,24 @@ Page({
     const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
     if (userInfo) {
       this.setData({
-        avatarUrl: userInfo.avatarUrl,
+        avatarUrl: imageUtil.getCachedUrlOrEmpty(userInfo.avatarUrl),
         nickName: userInfo.nickName
       });
+      // 异步解析头像
+      this._resolveAvatar(userInfo.avatarUrl);
+    }
+  },
+
+  // 异步解析头像 cloud:// → https://
+  async _resolveAvatar(avatarUrl) {
+    if (!imageUtil.isCloudFileURL(avatarUrl)) return;
+    try {
+      const resolved = await imageUtil.resolveImage(avatarUrl);
+      if (resolved && resolved.startsWith('https://')) {
+        this.setData({ avatarUrl: resolved });
+      }
+    } catch (e) {
+      console.warn('[login] 解析头像失败', e);
     }
   },
 

@@ -1,5 +1,6 @@
 const app = getApp();
 const db = require('../../utils/db.js');
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -31,7 +32,12 @@ Page({
     // 阶段1：同步读 storage，瞬时显示（冷启动 storage 同步可用）
     const cached = wx.getStorageSync('userInfo');
     if (cached) {
-      this.setData({ userInfo: cached });
+      // 优先使用缓存中未过期的URL，cloud://则替换为空字符串（WXML fallback到默认图）
+      this.setData({
+        userInfo: { ...cached, avatarUrl: imageUtil.getCachedUrlOrEmpty(cached.avatarUrl) }
+      });
+      // 异步解析头像
+      this._resolveAvatar(cached.avatarUrl);
     }
 
     // 阶段2：await loginPromise 拿到最新云端 userInfo
@@ -40,7 +46,25 @@ Page({
     }
     const userInfo = app.globalData.userInfo || cached;
     if (userInfo) {
-      this.setData({ userInfo });
+      this.setData({
+        userInfo: { ...userInfo, avatarUrl: imageUtil.getCachedUrlOrEmpty(userInfo.avatarUrl) }
+      });
+      this._resolveAvatar(userInfo.avatarUrl);
+    }
+  },
+
+  // 异步解析头像 cloud:// → https://
+  async _resolveAvatar(avatarUrl) {
+    if (!imageUtil.isCloudFileURL(avatarUrl)) return;
+    try {
+      const resolved = await imageUtil.resolveImage(avatarUrl);
+      if (resolved && resolved.startsWith('https://')) {
+        this.setData({
+          'userInfo.avatarUrl': resolved
+        });
+      }
+    } catch (e) {
+      console.warn('[my] 解析头像失败', e);
     }
   },
 

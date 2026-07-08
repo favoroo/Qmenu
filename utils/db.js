@@ -11,9 +11,11 @@ let cloudCache = {
 };
 
 let currentGroupId = '';
+let _dataVersion = 0; // 云端数据版本号，每次 initCloudData 成功后递增，用于页面检测数据刷新
 
 // 本地缓存键常量
 const CACHE_PREFIX = 'cloudData_';
+const CACHE_VERSION = 2; // 缓存版本，升级时自动失效旧缓存（避免过期临时URL导致403）
 const LAST_GROUP_KEY = 'lastGroupId';
 const GROUPS_LIST_KEY = 'cachedGroupsList';
 
@@ -196,7 +198,8 @@ const db = {
     if (!groupId) return false;
     try {
       const cached = wx.getStorageSync(CACHE_PREFIX + groupId);
-      if (cached && cached.categories) {
+      // 缓存版本校验：版本不匹配时拒绝使用旧缓存（旧缓存可能含过期的临时https URL）
+      if (cached && cached.categories && cached._v === CACHE_VERSION) {
         cloudCache.categories = cached.categories;
         cloudCache.recipes = cached.recipes || [];
         cloudCache.orders = cached.orders || [];
@@ -205,6 +208,10 @@ const db = {
         cloudCache.cartDocId = ''; // 重置，由 _fetchCart 或 _ensureCartDocId 重新获取
         currentGroupId = groupId;
         return true;
+      }
+      // 版本不匹配或缓存无效，清除旧缓存
+      if (cached && cached._v !== CACHE_VERSION) {
+        wx.removeStorageSync(CACHE_PREFIX + groupId);
       }
     } catch (e) {
       console.warn('[db] loadFromLocalCache failed', e);
@@ -216,6 +223,7 @@ const db = {
     if (!groupId) return;
     try {
       wx.setStorageSync(CACHE_PREFIX + groupId, {
+        _v: CACHE_VERSION,
         categories: cloudCache.categories,
         recipes: cloudCache.recipes,
         orders: cloudCache.orders,
@@ -244,6 +252,14 @@ const db = {
 
   getCachedGroupsList() {
     try { return wx.getStorageSync(GROUPS_LIST_KEY) || []; } catch (e) { return []; }
+  },
+
+  /**
+   * 获取云端数据版本号（每次 initCloudData 成功后递增）
+   * 页面保存上次渲染版本号，通过比较版本号判断云端数据是否已刷新
+   */
+  getDataVersion() {
+    return _dataVersion;
   },
 
   // 从云端加载所有数据并缓存 (支持 groupId 隔离，并行查询)
@@ -281,6 +297,9 @@ const db = {
       cloudCache.ratings = ratings;
       cloudCache.cart = cart;
 
+      // 递增数据版本号，通知页面数据已从云端刷新
+      _dataVersion++;
+
       // 落盘本地缓存，供下次冷启动瞬时渲染
       this.saveToLocalCache(gid);
     } catch (err) {
@@ -314,34 +333,40 @@ const db = {
     let recRes = await dbInstance.collection('recipes').where({ groupId: gid }).get();
     let recipes = recRes.data;
     if (recipes.length === 0) {
-      for (let rec of DEFAULT_RECIPES) {
-        const res = await dbInstance.collection('recipes').add({
-          data: {
-            id: rec.id,
-            groupId: gid,
-            name: rec.name,
-            categoryId: rec.categoryId,
-            price: rec.price,
-            image: rec.image,
-            desc: rec.desc,
-            status: rec.status,
-            deliciousRating: rec.deliciousRating || 0,
-            difficultyRating: rec.difficultyRating || 0,
-            hasMaterialStep: rec.hasMaterialStep,
-            materials: rec.materials,
-            materialsPublic: rec.materialsPublic,
-            steps: rec.steps,
-            stepsPublic: rec.stepsPublic,
-            creatorId: 'system',
-            creatorName: '系统'
-          }
-        });
-        rec._id = res.id;
+      // 通过分类集合判断是否为全新群组
+      // 如果分类已存在，说明群组已初始化过，用户可能删除了所有菜谱，不应自动恢复
+      const catRes = await dbInstance.collection('categories').where({ groupId: gid }).get();
+      if (catRes.data.length === 0) {
+        // 真正的新群组：创建全部默认菜谱
+        for (let rec of DEFAULT_RECIPES) {
+          const res = await dbInstance.collection('recipes').add({
+            data: {
+              id: rec.id,
+              groupId: gid,
+              name: rec.name,
+              categoryId: rec.categoryId,
+              price: rec.price,
+              image: rec.image,
+              desc: rec.desc,
+              status: rec.status,
+              deliciousRating: rec.deliciousRating || 0,
+              difficultyRating: rec.difficultyRating || 0,
+              hasMaterialStep: rec.hasMaterialStep,
+              materials: rec.materials,
+              materialsPublic: rec.materialsPublic,
+              steps: rec.steps,
+              stepsPublic: rec.stepsPublic,
+              creatorId: 'system',
+              creatorName: '系统'
+            }
+          });
+          rec._id = res.id;
+        }
+        recipes = DEFAULT_RECIPES.map(r => ({ ...r, groupId: gid, creatorId: 'system', creatorName: '系统' }));
       }
-      recipes = DEFAULT_RECIPES.map(r => ({ ...r, groupId: gid, creatorId: 'system', creatorName: '系统' }));
+      // else: 群组已存在但菜谱为空，说明用户清空了所有菜谱，保持为空
     } else {
-      // 增量同步：更新已有默认菜谱的图片及分类属性，以及添加缺失的默认菜谱
-      let updatedAny = false;
+      // 增量同步：更新已有默认菜谱的图片及分类属性（仅同步仍存在的系统菜谱，不恢复已删除的）
       for (let rec of recipes) {
         if (rec.creatorId === 'system') {
           const matchDefault = DEFAULT_RECIPES.find(dr => dr.id === rec.id || dr.name === rec.name);
@@ -363,52 +388,10 @@ const db = {
                 await dbInstance.collection('recipes').doc(rec._id).update({
                   data: updateFields
                 });
-                updatedAny = true;
               } catch (e) {
                 console.error('[db] 同步默认菜谱属性失败', rec.name, e);
               }
             }
-          }
-        }
-      }
-      
-      // 检查是否有缺失的默认菜谱
-      for (let defaultRec of DEFAULT_RECIPES) {
-        const exists = recipes.some(r => r.id === defaultRec.id || r.name === defaultRec.name);
-        if (!exists) {
-          try {
-            const res = await dbInstance.collection('recipes').add({
-              data: {
-                id: defaultRec.id,
-                groupId: gid,
-                name: defaultRec.name,
-                categoryId: defaultRec.categoryId,
-                price: defaultRec.price,
-                image: defaultRec.image,
-                desc: defaultRec.desc,
-                status: defaultRec.status,
-                deliciousRating: defaultRec.deliciousRating || 0,
-                difficultyRating: defaultRec.difficultyRating || 0,
-                hasMaterialStep: defaultRec.hasMaterialStep,
-                materials: defaultRec.materials,
-                materialsPublic: defaultRec.materialsPublic,
-                steps: defaultRec.steps,
-                stepsPublic: defaultRec.stepsPublic,
-                creatorId: 'system',
-                creatorName: '系统'
-              }
-            });
-            const newRec = {
-              ...defaultRec,
-              _id: res.id,
-              groupId: gid,
-              creatorId: 'system',
-              creatorName: '系统'
-            };
-            recipes.push(newRec);
-            updatedAny = true;
-          } catch (e) {
-            console.error('[db] 补全默认菜谱失败', defaultRec.name, e);
           }
         }
       }
@@ -533,65 +516,22 @@ const db = {
   },
 
   /**
-   * 仅更新本地缓存中菜谱的 image 字段（用于图片解析后回写，避免乒乓效应）
-   * 不触发云端同步，不保存到本地持久化缓存（因为临时URL会过期）
-   * @param {Object[]} resolvedRecipes - 已解析图片URL的菜谱数组
+   * 图片解析完成后的回调（保留接口兼容性，不再修改cloudCache）
+   * 解析后的 https URL 存储在 image.js 自身的缓存中（带TTL），页面 data 中也保存
+   * cloudCache 始终保持云端原始数据（cloud:// URL），避免临时URL被持久化导致403
+   * @param {Object[]} resolvedRecipes - 已解析图片URL的菜谱数组（已不再使用）
    */
   updateRecipeImagesInCache(resolvedRecipes) {
-    if (!cloudCache.recipes || !resolvedRecipes) return;
-    const map = {};
-    resolvedRecipes.forEach(r => {
-      // 只回写成功解析为 https:// 的 URL，跳过空字符串和 cloud://
-      if (r.image && typeof r.image === 'string' && r.image.startsWith('https://')) {
-        map[r.id] = r.image;
-      }
-    });
-    for (let i = 0; i < cloudCache.recipes.length; i++) {
-      const id = cloudCache.recipes[i].id;
-      if (map[id] && map[id] !== cloudCache.recipes[i].image) {
-        cloudCache.recipes[i].image = map[id];
-      }
-    }
-    this.saveToLocalCache(currentGroupId);
+    // 不再修改 cloudCache，避免 https 临时URL被写入内存后又被其他save操作持久化
+    // image.js 内部已有 TTL 缓存机制，页面直接使用 getCachedUrlOrEmpty + 异步解析即可
   },
 
   /**
-   * 仅更新本地缓存中订单的 image 字段（用于图片解析后回写）
-   * 不触发云端同步
-   * @param {Object[]} resolvedOrders - 已解析图片URL的订单数组
+   * 图片解析完成后的回调（保留接口兼容性，不再修改cloudCache）
+   * @param {Object[]} resolvedOrders - 已解析图片URL的订单数组（已不再使用）
    */
   updateOrderImagesInCache(resolvedOrders) {
-    if (!cloudCache.orders || !resolvedOrders) return;
-    const map = {};
-    resolvedOrders.forEach(o => { map[o.id] = o; });
-    for (let i = 0; i < cloudCache.orders.length; i++) {
-      const id = cloudCache.orders[i].id;
-      const resolved = map[id];
-      if (resolved) {
-        // 只更新成功解析为 https:// 的头像和图片
-        if (resolved.chefAvatar && typeof resolved.chefAvatar === 'string' && resolved.chefAvatar.startsWith('https://')) {
-          cloudCache.orders[i].chefAvatar = resolved.chefAvatar;
-        }
-        if (resolved.userAvatar && typeof resolved.userAvatar === 'string' && resolved.userAvatar.startsWith('https://')) {
-          cloudCache.orders[i].userAvatar = resolved.userAvatar;
-        }
-        if (resolved.items && cloudCache.orders[i].items) {
-          const itemMap = {};
-          resolved.items.forEach(it => {
-            if (it.image && typeof it.image === 'string' && it.image.startsWith('https://')) {
-              itemMap[it.recipeId] = it.image;
-            }
-          });
-          for (let j = 0; j < cloudCache.orders[i].items.length; j++) {
-            const rid = cloudCache.orders[i].items[j].recipeId;
-            if (itemMap[rid]) {
-              cloudCache.orders[i].items[j].image = itemMap[rid];
-            }
-          }
-        }
-      }
-    }
-    this.saveToLocalCache(currentGroupId);
+    // 不再修改 cloudCache，避免 https 临时URL被写入内存后又被其他save操作持久化
   },
 
   async addRecipe(recipe) {
@@ -692,6 +632,52 @@ const db = {
     }
     cloudCache.recipes = list.filter(item => item.id !== id);
     this.removeFromCartCompletely(id);
+    this.saveToLocalCache(currentGroupId);
+  },
+
+  async deleteRecipes(ids) {
+    if (!ids || ids.length === 0) return;
+    const list = this.getRecipes();
+    const targets = list.filter(r => ids.includes(r.id));
+    if (targets.length === 0) return;
+
+    // 收集所有关联图片
+    let allImagePaths = [];
+    targets.forEach(target => {
+      const paths = imageUtil.collectRecipeImages(target);
+      if (paths && paths.length > 0) {
+        allImagePaths = allImagePaths.concat(paths);
+      }
+    });
+
+    const dbInstance = wx.cloud.database();
+
+    // 批量在云端数据库中删除文档
+    const removePromises = targets.map(target => {
+      if (target._id) {
+        return dbInstance.collection('recipes').doc(target._id).remove()
+          .catch(err => {
+            console.error('[db] deleteRecipes 批量项云端删除失败', target.name, err);
+          });
+      }
+      return Promise.resolve();
+    });
+
+    await Promise.all(removePromises);
+
+    // 删除关联的图片文件
+    if (allImagePaths.length > 0) {
+      await imageUtil.removeImagesAsync(allImagePaths);
+    }
+
+    // 更新内存缓存
+    cloudCache.recipes = list.filter(item => !ids.includes(item.id));
+
+    // 同步从购物车中彻底清理
+    ids.forEach(id => {
+      this.removeFromCartCompletely(id);
+    });
+
     this.saveToLocalCache(currentGroupId);
   },
 

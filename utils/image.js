@@ -413,7 +413,10 @@ function resolveImages(fileIDs) {
 function resolveImage(fileID) {
   if (!fileID) return Promise.resolve('');
   if (!isCloudFileURL(fileID)) return Promise.resolve(fileID);
-  return resolveImages([fileID]).then(map => map[fileID] || fileID);
+  return resolveImages([fileID]).then(map => {
+    const resolved = map[fileID];
+    return (resolved && resolved.startsWith('https://')) ? resolved : '';
+  });
 }
 
 /**
@@ -435,6 +438,10 @@ function resolveRecipeImages(recipes) {
       if (r.image && isCloudFileURL(r.image) && map[r.image] && map[r.image].startsWith('https://')) {
         return { ...r, image: map[r.image] };
       }
+      // 非云存储图片保持原样；云存储图片解析失败则设为空字符串（WXML fallback 到默认占位图）
+      if (r.image && isCloudFileURL(r.image)) {
+        return { ...r, image: '' };
+      }
       return { ...r };
     });
   });
@@ -455,11 +462,16 @@ function resolveRecipeDetail(recipe) {
     const newRecipe = { ...recipe };
     if (recipe.image && isCloudFileURL(recipe.image) && map[recipe.image] && map[recipe.image].startsWith('https://')) {
       newRecipe.image = map[recipe.image];
+    } else if (recipe.image && isCloudFileURL(recipe.image)) {
+      newRecipe.image = '';
     }
     if (recipe.steps) {
       newRecipe.steps = recipe.steps.map(s => {
         if (s.image && isCloudFileURL(s.image) && map[s.image] && map[s.image].startsWith('https://')) {
           return { ...s, image: map[s.image] };
+        }
+        if (s.image && isCloudFileURL(s.image)) {
+          return { ...s, image: '' };
         }
         return { ...s };
       });
@@ -470,7 +482,7 @@ function resolveRecipeDetail(recipe) {
 
 /**
  * 批量解析用户/成员的头像
- * 只替换成功解析的，失败的保留原值
+ * 成功解析的替换为 https URL，失败的 cloud:// 设为空字符串（WXML fallback到默认头像）
  */
 function resolveAvatars(users, avatarField) {
   const field = avatarField || 'avatarUrl';
@@ -488,6 +500,10 @@ function resolveAvatars(users, avatarField) {
       if (u[field] && isCloudFileURL(u[field]) && map[u[field]] && map[u[field]].startsWith('https://')) {
         return { ...u, [field]: map[u[field]] };
       }
+      // 云存储头像解析失败则设为空字符串（WXML fallback到默认头像）
+      if (u[field] && isCloudFileURL(u[field])) {
+        return { ...u, [field]: '' };
+      }
       return { ...u };
     });
   });
@@ -498,6 +514,37 @@ function resolveAvatars(users, avatarField) {
  */
 function resolveAvatar(avatarUrl) {
   return resolveImage(avatarUrl);
+}
+
+/**
+ * 同步版本：从本地缓存中获取已解析的 https URL（用于初始渲染避免闪烁）
+ * - 非 cloud:// 路径原样返回
+ * - cloud:// 路径：若有未过期的缓存URL则返回，否则返回空字符串（WXML 会 fallback 到默认图）
+ *
+ * @param {string} url - 图片URL或fileID
+ * @returns {string} 可直接用于渲染的URL或空字符串
+ */
+function getCachedUrlOrEmpty(url) {
+  if (!url || typeof url !== 'string') return '';
+  if (!url.startsWith('cloud://')) return url;
+  const cached = _getCachedUrl(url);
+  return cached || '';
+}
+
+/**
+ * 同步批量版本：批量获取缓存URL
+ * @param {string[]} urls - URL/fileID 数组
+ * @returns {Object} { originalUrl: resolvedUrl } 映射
+ */
+function getCachedUrlsOrEmpty(urls) {
+  const result = {};
+  if (!urls || !Array.isArray(urls)) return result;
+  urls.forEach(url => {
+    if (typeof url === 'string' && url) {
+      result[url] = getCachedUrlOrEmpty(url);
+    }
+  });
+  return result;
 }
 
 module.exports = {
@@ -514,6 +561,8 @@ module.exports = {
   // fileID 解析工具
   isCloudFileURL,
   maskCloudUrl,
+  getCachedUrlOrEmpty,
+  getCachedUrlsOrEmpty,
   resolveImage,
   resolveImages,
   resolveRecipeImages,
