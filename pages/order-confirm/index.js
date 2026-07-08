@@ -32,6 +32,39 @@ Page({
     }
   },
 
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { type, index } = e.currentTarget.dataset;
+    if (typeof index !== 'number' && typeof index !== 'string') return;
+
+    if (type === 'dishImage') {
+      const cartItems = [...this.data.cartItems];
+      const item = cartItems[index];
+      if (item && item.recipe && item.recipe.image && imageUtil.isCloudFileURL(item.recipe.image)) {
+        imageUtil.resolveImage(item.recipe.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            cartItems[index] = {
+              ...item,
+              recipe: { ...item.recipe, image: resolved }
+            };
+            this.setData({ cartItems });
+          }
+        }).catch(err => console.warn('[order-confirm] 重新解析菜品图片失败', err));
+      }
+    } else if (type === 'memberAvatar') {
+      const members = [...this.data.members];
+      const member = members[index];
+      if (member && member.avatarUrl && imageUtil.isCloudFileURL(member.avatarUrl)) {
+        imageUtil.resolveImage(member.avatarUrl).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            members[index] = { ...member, avatarUrl: resolved };
+            this.setData({ members });
+          }
+        }).catch(err => console.warn('[order-confirm] 重新解析头像失败', err));
+      }
+    }
+  },
+
   async loadCart() {
     const app = getApp();
     if (app.globalData.loginPromise) {

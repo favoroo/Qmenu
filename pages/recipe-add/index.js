@@ -92,7 +92,7 @@ Page({
         name: recipe.name,
         price: recipe.price.toString(),
         desc: recipe.desc || '',
-        imagePath: recipe.image || '',
+        imagePath: imageUtil.getCachedUrlOrEmpty(recipe.image) || '',
         categoryIndex: categoryIndex > -1 ? categoryIndex : 0,
         deliciousRating: recipe.deliciousRating || 0,
         difficultyRating: recipe.difficultyRating || 0,
@@ -104,6 +104,70 @@ Page({
       }, () => {
         this.updateCategoryName();
       });
+
+      // 异步解析菜谱封面图 cloud:// → https://
+      if (recipe.image && imageUtil.isCloudFileURL(recipe.image)) {
+        imageUtil.resolveImage(recipe.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://') && this.data.name === recipe.name) {
+            this.setData({ imagePath: resolved });
+          }
+        }).catch(e => console.warn('[recipe-add] 解析图片失败', e));
+      }
+      // 异步解析步骤图片
+      if (recipe.steps) {
+        const stepImageFileIDs = recipe.steps
+          .map(s => s.image)
+          .filter(img => img && imageUtil.isCloudFileURL(img));
+        if (stepImageFileIDs.length > 0) {
+          imageUtil.resolveImages(stepImageFileIDs).then(map => {
+            if (this.data.name !== recipe.name) return; // 确保仍在编辑同一菜谱
+            const steps = this.data.steps.map(s => {
+              if (s.image && map[s.image] && map[s.image].startsWith('https://')) {
+                return { ...s, image: map[s.image] };
+              }
+              if (s.image && imageUtil.isCloudFileURL(s.image)) {
+                return { ...s, image: '' }; // 解析失败设为空
+              }
+              return { ...s };
+            });
+            this.setData({ steps });
+          }).catch(e => console.warn('[recipe-add] 解析步骤图片失败', e));
+        }
+      }
+    }
+  },
+
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { type, index } = e.currentTarget.dataset;
+    if (type === 'cover') {
+      const recipeId = this.data.recipeId;
+      if (!recipeId) return;
+      const recipes = db.getRecipes();
+      const recipe = recipes.find(r => r.id === recipeId);
+      if (recipe && recipe.image && imageUtil.isCloudFileURL(recipe.image)) {
+        imageUtil.resolveImage(recipe.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://') && this.data.name === recipe.name) {
+            this.setData({ imagePath: resolved });
+          }
+        }).catch(err => console.warn('[recipe-add] 重新解析封面图失败', err));
+      }
+    } else if (type === 'stepImage' && (typeof index === 'number' || typeof index === 'string')) {
+      const recipeId = this.data.recipeId;
+      if (!recipeId) return;
+      const recipes = db.getRecipes();
+      const recipe = recipes.find(r => r.id === recipeId);
+      if (!recipe || !recipe.steps || !recipe.steps[index]) return;
+      const stepImage = recipe.steps[index].image;
+      if (stepImage && imageUtil.isCloudFileURL(stepImage)) {
+        imageUtil.resolveImage(stepImage).then(resolved => {
+          if (resolved && resolved.startsWith('https://') && this.data.name === recipe.name) {
+            const steps = [...this.data.steps];
+            steps[index] = { ...steps[index], image: resolved };
+            this.setData({ steps });
+          }
+        }).catch(err => console.warn('[recipe-add] 重新解析步骤图失败', err));
+      }
     }
   },
 
@@ -141,18 +205,6 @@ Page({
   onHasMaterialStepChange(e) {
     this.setData({
       hasMaterialStep: e.detail.value
-    });
-  },
-
-  onMaterialsPublicChange(e) {
-    this.setData({
-      materialsPublic: e.detail.value
-    });
-  },
-
-  onStepsPublicChange(e) {
-    this.setData({
-      stepsPublic: e.detail.value
     });
   },
 

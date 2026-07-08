@@ -85,7 +85,7 @@
       <view class="member-list">
         <view class="member-item flex-row align-center justify-between" wx:for="{{group.members}}" wx:key="openid">
           <view class="member-left flex-row align-center">
-            <image class="avatar" src="{{item.avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+            <image class="avatar" src="{{item.avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="memberAvatar" data-index="{{index}}"></image>
             <text class="nickname">{{item.nickName}}</text>
           </view>
           <view class="member-actions flex-row align-center" wx:if="{{isOwner && item.openid !== myOpenid}}">

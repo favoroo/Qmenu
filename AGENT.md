@@ -180,6 +180,28 @@ Page({
 - **禁止误删** `/assets/`、`cloud://`、`http(s)://` 路径（用 `isManagedLocalFile` / `isTempPath` 守卫）。
 - 历史遗留的本地持久化路径 `USER_DATA_PATH/recipe_imgs` 仅作降级方案，新代码统一走云存储。
 
+#### 4.1 云存储 URL 解析规范（硬约束 — 违反会导致图片 403 / 不显示）
+
+云存储免费版无法设置"所有用户可读"，`cloud://` fileID 必须通过 `getTempFileURL` 云函数转为 `https://` 临时链接才能在 `<image>` 中渲染。临时链接有效期约 **2 小时**，以下规则缺一不可：
+
+| 规则 | 要求 | 违反后果 |
+|------|------|---------|
+| **cloud:// 不得直接渲染** | WXML 中 `<image src>` 不得直接绑定 `cloud://` 路径 | 图片不显示（控制台无报错，静默失败） |
+| **https:// 临时 URL 不得持久化** | 禁止将 `https://*.tcb.qcloud.la` 临时 URL 写入 `wx.setStorageSync` 或 `cloudCache` 后调用 `saveToLocalCache` | 冷启动后 URL 过期返回 **403** |
+| **初始渲染用 getCachedUrlOrEmpty** | 页面 `loadData` 中首次 `setData` 时，图片字段必须经 `imageUtil.getCachedUrlOrEmpty(url)` 处理 | 闪烁（默认图→真实图跳变） |
+| **异步解析用 resolveRecipeImages 等** | 初始渲染后必须异步调用 `imageUtil.resolveRecipeImages` / `resolveAvatars` / `resolveImage` 解析 `cloud://` URL 并 `setData` 更新 | 图片始终显示默认占位图 |
+| **`<image>` 必须加 binderror** | 所有渲染云存储图片的 `<image>` 标签必须绑定 `binderror="onImageError"` 并在页面 JS 实现 `onImageError` 方法 | 临时 URL 过期后图片 403 无法自动恢复 |
+| **onImageError 须从 db 取原始 cloud://** | `onImageError` 中不得复用页面 data 中已过期的 `https://` URL，必须从 `db.getRecipes()` / `db.getOrders()` 等获取原始 `cloud://` fileID 重新解析 | 重新解析仍用过期 URL，403 无法恢复 |
+| **解析失败返回空字符串** | `resolveImage` / `resolveRecipeImages` 等函数解析失败时返回 `''`（非 `cloud://` 路径），触发 WXML `\|\|` fallback 到默认占位图 | 控制台报路径错误 |
+| **cloudCache 不得回写 https://** | `db.updateRecipeImagesInCache` / `updateOrderImagesInCache` 为空操作，不得恢复为写 `cloudCache`。会话级内存缓存由 `image.js` 的 `_resolvedUrlMap` 管理 | https URL 被意外持久化到本地存储 |
+
+**新增页面/组件时的检查清单**：
+1. 该页面是否有 `<image>` 渲染云存储图片？→ 是 → 必须加 `binderror="onImageError"` + `data-type` + `data-id`
+2. 该页面的 `loadData` / `onShow` 是否直接使用了 `db.getRecipes()` / `db.getOrders()` 返回的数据？→ 是 → 图片字段必须经 `imageUtil.getCachedUrlOrEmpty()` 处理后才能 `setData`
+3. 是否在 `setData` 后调用了异步解析（`resolveRecipeImages` / `resolveAvatars` / `resolveImage`）？→ 必须调用
+4. 该页面的 `onImageError` 是否从 `db.getRecipes()` / `db.getOrders()` 获取原始 `cloud://` URL？→ 必须
+5. 是否有任何代码将 `https://` 临时 URL 写入 `wx.setStorageSync` 或调用 `db.saveToLocalCache`？→ **禁止**
+
 ### 5. 订阅消息规范（硬约束）
 
 - **模板 ID 与请求逻辑集中在 `utils/subscribe.js`**，禁止在页面硬编码模板 ID。

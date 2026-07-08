@@ -71,7 +71,7 @@
             <view class="dish-grip-bar"></view>
             <view class="dish-grip-bar"></view>
           </view>
-          <image class="dish-thumb" src="{{recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+          <image class="dish-thumb" src="{{recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{recipe.id}}"></image>
           <text class="dish-name flex-1 text-ellipsis">{{recipe.name}}</text>
           <text class="dish-price">¥{{recipe.price}}</text>
           

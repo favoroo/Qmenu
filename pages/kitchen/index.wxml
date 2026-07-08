@@ -32,7 +32,7 @@
     </view>
     <view class="ranking-bar-chefs flex-row align-center flex-1">
       <view class="ranking-bar-avatar-group flex-row" wx:for="{{chefRanking}}" wx:for-item="chef" wx:key="chefId">
-        <image class="ranking-bar-avatar" src="{{chef.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+        <image class="ranking-bar-avatar" src="{{chef.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="avatar" data-id="{{chef.chefId}}"></image>
         <text class="ranking-bar-rank rank-{{index + 1}}">{{index + 1}}</text>
       </view>
     </view>
@@ -110,7 +110,7 @@
         
         <view class="recipes-container" wx:if="{{group.recipes.length > 0}}">
           <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{group.recipes}}" wx:for-item="item" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
-            <image class="recipe-image" src="{{item.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+            <image class="recipe-image" src="{{item.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{item.id}}"></image>
             <view class="recipe-info flex-1 flex-col justify-between">
               <view>
                 <view class="recipe-name flex-row align-center justify-between">
@@ -314,7 +314,7 @@
       <!-- Scrollable content -->
       <scroll-view class="detail-content-scroll flex-1" scroll-y>
         <!-- Cover Image -->
-        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{selectedRecipe.id}}"></image>
         
         <view class="detail-info-container">
           <!-- Title and Category badge -->
@@ -456,7 +456,7 @@
 
     <block wx:if="{{movingRecipe}}">
       <view class="move-recipe-hint flex-row align-center">
-        <image class="move-recipe-image" src="{{movingRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+        <image class="move-recipe-image" src="{{movingRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{movingRecipe.id}}"></image>
         <text class="move-recipe-name">{{movingRecipe.name}}</text>
       </view>
     </block>
@@ -484,7 +484,7 @@
     <view class="profile-modal-form">
       <view class="profile-avatar-section flex-col align-center">
         <button class="profile-avatar-wrapper" open-type="chooseAvatar" bindchooseavatar="onChooseProfileAvatar">
-          <image class="profile-avatar-img" src="{{profileAvatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+          <image class="profile-avatar-img" src="{{profileAvatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="profileAvatar"></image>
           <view class="profile-avatar-edit-badge">
             <text class="edit-badge-icon">📷</text>
           </view>

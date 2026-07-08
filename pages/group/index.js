@@ -39,6 +39,24 @@ Page({
     }
   },
 
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { index } = e.currentTarget.dataset;
+    if (typeof index !== 'number' && typeof index !== 'string') return;
+    const group = this.data.group;
+    if (!group || !group.members || !group.members[index]) return;
+    const member = group.members[index];
+    if (member.avatarUrl && imageUtil.isCloudFileURL(member.avatarUrl)) {
+      imageUtil.resolveImage(member.avatarUrl).then(resolved => {
+        if (resolved && resolved.startsWith('https://')) {
+          const members = [...group.members];
+          members[index] = { ...member, avatarUrl: resolved };
+          this.setData({ 'group.members': members });
+        }
+      }).catch(err => console.warn('[group] 重新解析头像失败', err));
+    }
+  },
+
   async loadGroupList() {
     try {
       const res = await wx.cloud.callFunction({ name: 'getGroup' });

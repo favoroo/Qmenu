@@ -68,6 +68,18 @@ Page({
     }
   },
 
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { type } = e.currentTarget.dataset;
+    if (type === 'myAvatar') {
+      const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
+      const rawAvatar = (userInfo && userInfo.avatarUrl) || '';
+      if (rawAvatar && imageUtil.isCloudFileURL(rawAvatar)) {
+        this._resolveAvatar(rawAvatar);
+      }
+    }
+  },
+
   async loadGroups() {
     // 阶段1：缓存瞬时渲染
     const cachedGroups = db.getCachedGroupsList();

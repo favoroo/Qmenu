@@ -3,7 +3,7 @@
     <!-- 1. Photo Uploader -->
     <view class="form-group flex-col align-center">
       <view class="image-uploader flex-col justify-center align-center" bindtap="chooseImage">
-        <image class="preview-image" src="{{imagePath}}" mode="aspectFill" wx:if="{{imagePath}}"></image>
+        <image class="preview-image" src="{{imagePath}}" mode="aspectFill" wx:if="{{imagePath}}" binderror="onImageError" data-type="cover"></image>
         <view class="uploader-placeholder flex-col justify-center align-center" wx:else>
           <view class="plus-icon">+</view>
           <view class="uploader-text">上传菜谱大图</view>
@@ -115,10 +115,6 @@
           <text class="section-title">用料</text>
           <text class="section-subtitle">记下用料，方便购买</text>
         </view>
-        <view class="flex-row align-center">
-          <text class="toggle-label">公开</text>
-          <switch class="mini-switch" color="#005BCB" checked="{{materialsPublic}}" bindchange="onMaterialsPublicChange" />
-        </view>
       </view>
 
       <!-- 用料列表 -->
@@ -161,10 +157,6 @@
       <!-- 做法部分 -->
       <view class="section-title-row flex-row justify-between align-center margin-bottom-md">
         <text class="section-title">做法</text>
-        <view class="flex-row align-center">
-          <text class="toggle-label">公开</text>
-          <switch class="mini-switch" color="#005BCB" checked="{{stepsPublic}}" bindchange="onStepsPublicChange" />
-        </view>
       </view>
 
       <!-- 步骤列表 -->
@@ -185,7 +177,7 @@
 
           <!-- 步骤图片 -->
           <view class="step-image-uploader flex-col justify-center align-center margin-bottom-sm" bindtap="chooseStepImage" data-index="{{index}}">
-            <image class="step-preview-image" src="{{item.image}}" mode="aspectFill" wx:if="{{item.image}}"></image>
+            <image class="step-preview-image" src="{{item.image}}" mode="aspectFill" wx:if="{{item.image}}" binderror="onImageError" data-type="stepImage" data-index="{{index}}"></image>
             <view class="step-uploader-placeholder flex-col justify-center align-center" wx:else>
               <view class="step-plus-icon">+</view>
               <view class="step-uploader-text">添加步骤图</view>

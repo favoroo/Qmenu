@@ -1,4 +1,5 @@
 const db = require('../../utils/db.js');
+const imageUtil = require('../../utils/image.js');
 
 Page({
   data: {
@@ -58,12 +59,35 @@ Page({
           id: r.id,
           name: r.name,
           price: r.price,
-          image: r.image,
+          image: imageUtil.getCachedUrlOrEmpty(r.image),
           status: r.status
         }))
     }));
 
     this.setData({ categories, categoryCards });
+  },
+
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { type, id } = e.currentTarget.dataset;
+    if (!id) return;
+    if (type === 'recipe') {
+      const recipes = db.getRecipes();
+      const recipe = recipes.find(r => r.id === id);
+      if (recipe && recipe.image && imageUtil.isCloudFileURL(recipe.image)) {
+        imageUtil.resolveImage(recipe.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            const categoryCards = this.data.categoryCards.map(cat => ({
+              ...cat,
+              recipes: (cat.recipes || []).map(r =>
+                r.id === id ? { ...r, image: resolved } : r
+              )
+            }));
+            this.setData({ categoryCards });
+          }
+        }).catch(err => console.warn('[category-manage] 重新解析菜谱图片失败', err));
+      }
+    }
   },
 
   onNameInput(e) {

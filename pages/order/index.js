@@ -59,6 +59,67 @@ Page({
     });
   },
 
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { type, id, orderId, recipeId } = e.currentTarget.dataset;
+    if (!id && !orderId) return;
+
+    if (type === 'recipe') {
+      const recipes = db.getRecipes();
+      const recipe = recipes.find(r => r.id === id);
+      if (recipe && recipe.image && imageUtil.isCloudFileURL(recipe.image)) {
+        imageUtil.resolveImage(recipe.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://') &&
+              this.data.selectedRecipe && this.data.selectedRecipe.id === id) {
+            this.setData({ 'selectedRecipe.image': resolved });
+          }
+        }).catch(err => console.warn('[order] 重新解析菜谱图片失败', err));
+      }
+    } else if (type === 'avatar' || type === 'userAvatar' || type === 'chefAvatar') {
+      // 排行榜头像 / 订单中的厨师头像 / 下单用户头像
+      const orders = db.getOrders();
+      const order = orders.find(o => o.id === id);
+      if (!order) return;
+      const avatarField = type === 'userAvatar' ? 'userAvatar' : 'chefAvatar';
+      const rawAvatar = order[avatarField];
+      if (rawAvatar && imageUtil.isCloudFileURL(rawAvatar)) {
+        imageUtil.resolveImage(rawAvatar).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            const orders = this.data.orders.map(o =>
+              o.id === id ? { ...o, [avatarField]: resolved } : o
+            );
+            this.setData({ orders });
+            if (this.data.ratingOrder && this.data.ratingOrder.id === id) {
+              this.setData({ ['ratingOrder.' + avatarField]: resolved });
+            }
+          }
+        }).catch(err => console.warn('[order] 重新解析头像失败', err));
+      }
+    } else if (type === 'dishImage') {
+      // 订单中的菜品图片
+      const orders = db.getOrders();
+      const order = orders.find(o => o.id === orderId);
+      if (!order || !order.items) return;
+      const dish = order.items.find(it => it.recipeId === recipeId);
+      if (dish && dish.image && imageUtil.isCloudFileURL(dish.image)) {
+        imageUtil.resolveImage(dish.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            const pageOrders = this.data.orders.map(o => {
+              if (o.id !== orderId || !o.items) return o;
+              return {
+                ...o,
+                items: o.items.map(it =>
+                  it.recipeId === recipeId ? { ...it, image: resolved } : it
+                )
+              };
+            });
+            this.setData({ orders: pageOrders });
+          }
+        }).catch(err => console.warn('[order] 重新解析菜品图片失败', err));
+      }
+    }
+  },
+
   async loadOrders() {
     const app = getApp();
     if (app.globalData.loginPromise) {

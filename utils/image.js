@@ -230,6 +230,18 @@ function clearAll() {
 const URL_CACHE_KEY = 'img_url_cache';
 const URL_CACHE_TTL = 1.5 * 60 * 60 * 1000; // 1.5 小时
 
+// ========== 会话级已解析 URL 映射 ==========
+// 不过期、不持久化，应用关闭后自动清除
+// 确保 cloud:// URL 在本次运行中被解析成功后，后续 getCachedUrlOrEmpty 始终返回 https:// URL
+// 避免 initCloudData 刷新 cloudCache 为 cloud:// 后，TTL 缓存过期导致的图片闪烁
+let _resolvedUrlMap = {};
+
+function _setResolvedUrl(fileID, url) {
+  if (fileID && url && fileID.startsWith('cloud://') && url.startsWith('https://')) {
+    _resolvedUrlMap[fileID] = url;
+  }
+}
+
 // 读取缓存
 function _getCache() {
   try {
@@ -319,6 +331,7 @@ function resolveImages(fileIDs) {
       const cached = _getCachedUrl(id);
       if (cached) {
         result[id] = cached;
+        _setResolvedUrl(id, cached); // 提升到会话映射，后续 getCachedUrlOrEmpty 可直接命中
       } else {
         needFetch.push(id);
       }
@@ -371,6 +384,7 @@ function resolveImages(fileIDs) {
                 // 成功：缓存并返回 https URL
                 allResults[item.fileID] = item.tempFileURL;
                 _setCachedUrl(item.fileID, item.tempFileURL);
+                _setResolvedUrl(item.fileID, item.tempFileURL); // 写入会话映射
               } else {
                 // 失败：返回原始 cloud:// 路径（不缓存，下次重试）
                 console.warn('[image] getTempFileURL 失败:', item.fileID, item.errMsg || 'status=' + item.status);
@@ -527,6 +541,10 @@ function resolveAvatar(avatarUrl) {
 function getCachedUrlOrEmpty(url) {
   if (!url || typeof url !== 'string') return '';
   if (!url.startsWith('cloud://')) return url;
+  // 1. 优先查询会话级内存映射（不过期，本次运行期间始终有效）
+  const resolved = _resolvedUrlMap[url];
+  if (resolved) return resolved;
+  // 2. 回退到 TTL 缓存（持久化到 wx storage，1.5h 有效期，跨会话有效）
   const cached = _getCachedUrl(url);
   return cached || '';
 }
@@ -547,6 +565,14 @@ function getCachedUrlsOrEmpty(urls) {
   return result;
 }
 
+/**
+ * 清空会话级已解析 URL 映射
+ * 用于群组切换等场景，避免旧群组的 URL 映射残留
+ */
+function clearResolvedUrlMap() {
+  _resolvedUrlMap = {};
+}
+
 module.exports = {
   CONFIG,
   storeImage,
@@ -563,6 +589,7 @@ module.exports = {
   maskCloudUrl,
   getCachedUrlOrEmpty,
   getCachedUrlsOrEmpty,
+  clearResolvedUrlMap,
   resolveImage,
   resolveImages,
   resolveRecipeImages,

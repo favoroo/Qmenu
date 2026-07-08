@@ -26,7 +26,7 @@
       <view class="card-title">菜品明细</view>
       
       <view class="dish-item flex-row align-center" wx:for="{{cartItems}}" wx:key="recipe.id">
-        <image class="dish-image" src="{{item.recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+        <image class="dish-image" src="{{item.recipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="dishImage" data-index="{{index}}"></image>
         <view class="dish-detail flex-1 flex-row justify-between align-center">
           <view class="dish-name-qty">
             <view class="dish-name">{{item.recipe.name}}</view>
@@ -66,7 +66,7 @@
           bindtap="onSelectChef"
           data-openid="{{m.openid}}"
         >
-          <image class="chef-avatar" src="{{m.avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+          <image class="chef-avatar" src="{{m.avatarUrl || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="memberAvatar" data-index="{{index}}"></image>
           <text class="chef-name">{{m.nickName}}</text>
         </view>
       </scroll-view>

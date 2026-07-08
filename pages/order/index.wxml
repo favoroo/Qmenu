@@ -31,7 +31,7 @@
       <view class="ranking-list">
         <view class="ranking-item flex-row align-center" wx:for="{{ranking}}" wx:key="chefId">
           <view class="rank-badge rank-{{index + 1}}">{{index + 1}}</view>
-          <image class="rank-avatar" src="{{item.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+          <image class="rank-avatar" src="{{item.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="avatar" data-id="{{item.chefId}}"></image>
           <view class="rank-info flex-1">
             <view class="rank-name-row flex-row align-center justify-between">
               <text class="rank-name text-ellipsis">{{item.chefName}}</text>
@@ -83,14 +83,14 @@
 
       <!-- User Info Row -->
       <view class="order-user-row flex-row align-center">
-        <image class="order-user-avatar" src="{{item.userAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+        <image class="order-user-avatar" src="{{item.userAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="userAvatar" data-id="{{item.id}}"></image>
         <text class="order-user-name">{{item.userName || '吃货好友'}}</text>
         <text class="order-user-tips">发起下单</text>
       </view>
 
       <!-- Chef Info Row -->
       <view class="chef-row flex-row align-center" wx:if="{{item.chefName}}">
-        <image class="chef-row-avatar" src="{{item.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+        <image class="chef-row-avatar" src="{{item.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="chefAvatar" data-id="{{item.id}}"></image>
         <text class="chef-row-label">厨师：</text>
         <text class="chef-row-name">{{item.chefName}}</text>
         <text class="chef-row-tag" wx:if="{{activeTab === 'kitchen' && item.chefId === myOpenid && item.status === 'pending'}}">待我制作</text>
@@ -99,7 +99,7 @@
       <!-- Card Body (Items) -->
       <view class="order-items-list">
         <view class="order-item flex-row align-center" wx:for="{{item.items}}" wx:for-item="dish" wx:key="recipeId" bindtap="viewRecipeDetail" data-recipe-id="{{dish.recipeId}}">
-          <image class="dish-image" src="{{dish.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+          <image class="dish-image" src="{{dish.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="dishImage" data-order-id="{{item.id}}" data-recipe-id="{{dish.recipeId}}"></image>
           <view class="dish-info flex-1 flex-row justify-between align-center">
             <view class="dish-name-qty">
               <view class="dish-name">{{dish.name}}</view>
@@ -222,7 +222,7 @@
       <!-- Scrollable content -->
       <scroll-view class="detail-content-scroll flex-1" scroll-y>
         <!-- Cover Image -->
-        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill"></image>
+        <image class="detail-cover-image" src="{{selectedRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{selectedRecipe.id}}"></image>
         
         <view class="detail-info-container">
           <!-- Title and Category badge -->
@@ -244,11 +244,10 @@
           </view>
           
           <!-- Ingredients (用料) -->
-          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.materials && selectedRecipe.materials.length > 0 && (selectedRecipe.materialsPublic || isAdmin)}}">
+          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.materials && selectedRecipe.materials.length > 0}}">
             <view class="detail-divider"></view>
             <view class="detail-section-title flex-row align-center justify-between">
               <text>食材清单</text>
-              <text class="private-badge" wx:if="{{!selectedRecipe.materialsPublic}}">仅自己可见</text>
             </view>
             
             <view class="detail-materials-table">
@@ -261,11 +260,10 @@
           </block>
           
           <!-- Cooking Steps (做法) -->
-          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.steps && selectedRecipe.steps.length > 0 && (selectedRecipe.stepsPublic || isAdmin)}}">
+          <block wx:if="{{selectedRecipe.hasMaterialStep && selectedRecipe.steps && selectedRecipe.steps.length > 0}}">
             <view class="detail-divider"></view>
             <view class="detail-section-title flex-row align-center justify-between">
               <text>烹饪步骤</text>
-              <text class="private-badge" wx:if="{{!selectedRecipe.stepsPublic}}">仅自己可见</text>
             </view>
             
             <view class="detail-steps-timeline">
@@ -316,7 +314,7 @@
     <view class="rating-modal-title">评价厨师</view>
 
     <view class="rating-chef-row flex-row align-center" wx:if="{{ratingOrder}}">
-      <image class="rating-chef-avatar" src="{{ratingOrder.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill"></image>
+      <image class="rating-chef-avatar" src="{{ratingOrder.chefAvatar || '/assets/images/default_avatar.png'}}" mode="aspectFill" binderror="onImageError" data-type="chefAvatar" data-id="{{ratingOrder.id}}"></image>
       <view class="rating-chef-info flex-1">
         <view class="rating-chef-name">{{ratingOrder.chefName}}</view>
         <view class="rating-chef-sub">单号：{{ratingOrder.id}}</view>

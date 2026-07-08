@@ -1083,6 +1083,57 @@ Page({
     }
   },
 
+  // 图片加载失败（403等）时自动重新解析
+  onImageError(e) {
+    const { type, id } = e.currentTarget.dataset;
+    if (!id && type !== 'profileAvatar') return;
+
+    if (type === 'recipe') {
+      const recipes = db.getRecipes();
+      const recipe = recipes.find(r => r.id === id);
+      if (recipe && recipe.image && imageUtil.isCloudFileURL(recipe.image)) {
+        imageUtil.resolveImage(recipe.image).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            const groupedRecipes = this.data.groupedRecipes.map(g => ({
+              ...g,
+              recipes: g.recipes.map(r => r.id === id ? { ...r, image: resolved } : r)
+            }));
+            this.setData({ groupedRecipes });
+            if (this.data.selectedRecipe && this.data.selectedRecipe.id === id) {
+              this.setData({ 'selectedRecipe.image': resolved });
+            }
+            if (this.data.movingRecipe && this.data.movingRecipe.id === id) {
+              this.setData({ 'movingRecipe.image': resolved });
+            }
+          }
+        }).catch(err => console.warn('[kitchen] 重新解析菜谱图片失败', err));
+      }
+    } else if (type === 'avatar') {
+      const ranking = db.getChefRanking('month');
+      const chef = ranking.find(c => c.chefId === id);
+      if (chef && chef.chefAvatar && imageUtil.isCloudFileURL(chef.chefAvatar)) {
+        imageUtil.resolveImage(chef.chefAvatar).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            const chefRanking = this.data.chefRanking.map(c =>
+              c.chefId === id ? { ...c, chefAvatar: resolved } : c
+            );
+            this.setData({ chefRanking });
+          }
+        }).catch(err => console.warn('[kitchen] 重新解析头像失败', err));
+      }
+    } else if (type === 'profileAvatar') {
+      const userInfo = app.globalData.userInfo || wx.getStorageSync('userInfo');
+      const rawAvatar = (userInfo && userInfo.avatarUrl) || '';
+      if (rawAvatar && imageUtil.isCloudFileURL(rawAvatar)) {
+        imageUtil.resolveImage(rawAvatar).then(resolved => {
+          if (resolved && resolved.startsWith('https://')) {
+            this.setData({ profileAvatarUrl: resolved });
+          }
+        }).catch(err => console.warn('[kitchen] 重新解析弹窗头像失败', err));
+      }
+    }
+  },
+
   startRandomRoll() {
     if (this.data.isRolling) return;
     
@@ -1211,7 +1262,7 @@ Page({
     wx.vibrateShort({ type: 'medium' });
     
     wx.showActionSheet({
-      itemList: ['编辑菜谱', '移动到分类'],
+      itemList: ['编辑菜谱', '移动到分类', '删除菜谱'],
       success(res) {
         if (res.tapIndex === 0) {
           // Edit recipe
@@ -1223,6 +1274,26 @@ Page({
           self.setData({
             movingRecipe: recipe,
             showMoveCategoryModal: true
+          });
+        } else if (res.tapIndex === 2) {
+          // Delete recipe
+          wx.showModal({
+            title: '删除菜品',
+            content: `确定要删除菜品「${recipe.name}」吗？此操作不可恢复。`,
+            confirmColor: '#E07A5F',
+            async success(modalRes) {
+              if (modalRes.confirm) {
+                try {
+                  await db.deleteRecipe(recipe.id);
+                  self.loadData();
+                  wx.showToast({ title: '已删除', icon: 'success' });
+                  wx.vibrateShort();
+                } catch (err) {
+                  console.error('删除菜谱失败', err);
+                  wx.showToast({ title: '删除失败，请重试', icon: 'none' });
+                }
+              }
+            }
           });
         }
       }
