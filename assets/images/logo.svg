@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Q 菜单">
+  <rect width="512" height="512" fill="#005BCB"/>
+  <g stroke="#E8B87E" stroke-width="26" stroke-linecap="round" fill="none">
+    <path d="M203 202c0-22 15-24 15-45"/>
+    <path d="M256 194c0-26 16-29 16-53"/>
+    <path d="M309 202c0-22 15-24 15-45"/>
+  </g>
+  <path d="M126 316h260c0 72-58 130-130 130s-130-58-130-130z" fill="#FBF8F2"/>
+  <rect x="100" y="294" width="312" height="29" rx="14.5" fill="#FBF8F2"/>
+</svg>
