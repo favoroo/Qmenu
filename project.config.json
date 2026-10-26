@@ -23,6 +23,10 @@
         "value": "cloudfunctions"
       },
       {
+        "type": "folder",
+        "value": "docs"
+      },
+      {
         "type": "file",
         "value": ".DS_Store"
       },
