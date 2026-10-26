@@ -109,7 +109,7 @@
         <view class="category-title-header" id="cat-{{group.categoryId}}">{{group.categoryName}}</view>
         
         <view class="recipes-container" wx:if="{{group.recipes.length > 0}}">
-          <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{group.recipes}}" wx:for-item="item" wx:key="id" bindtap="showRecipeDetail" bindlongpress="onRecipeLongPress" data-recipe="{{item}}">
+          <view class="recipe-card flex-row {{animReady ? 'stagger' : ''}}" wx:for="{{group.recipes}}" wx:for-item="item" wx:key="id" bindtap="showRecipeDetail" data-recipe="{{item}}">
             <image class="recipe-image" src="{{item.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{item.id}}"></image>
             <view class="recipe-info flex-1 flex-col justify-between">
               <view>
@@ -448,32 +448,6 @@
     </block>
   </view>
 
-  <!-- 8. Move to Category Modal -->
-  <view class="modal-overlay" wx:if="{{showMoveCategoryModal}}" bindtap="closeMoveCategoryModal"></view>
-  <view class="move-category-modal-card" wx:if="{{showMoveCategoryModal}}">
-    <view class="modal-close" bindtap="closeMoveCategoryModal">×</view>
-    <view class="modal-title">移动到分类</view>
-
-    <block wx:if="{{movingRecipe}}">
-      <view class="move-recipe-hint flex-row align-center">
-        <image class="move-recipe-image" src="{{movingRecipe.image || '/assets/images/default_food.jpg'}}" mode="aspectFill" binderror="onImageError" data-type="recipe" data-id="{{movingRecipe.id}}"></image>
-        <text class="move-recipe-name">{{movingRecipe.name}}</text>
-      </view>
-    </block>
-
-    <scroll-view class="move-category-list" scroll-y>
-      <view
-        class="move-category-item {{movingRecipe && movingRecipe.categoryId === item.id ? 'current' : ''}}"
-        wx:for="{{categories}}"
-        wx:key="id"
-        bindtap="onMoveCategorySelect"
-        data-id="{{item.id}}"
-      >
-        <text class="move-category-name">{{item.name}}</text>
-        <text class="move-category-current-badge" wx:if="{{movingRecipe && movingRecipe.categoryId === item.id}}">当前</text>
-      </view>
-    </scroll-view>
-  </view>
   <!-- Custom Profile Modal for New Users -->
   <view class="modal-overlay" wx:if="{{showProfileModal}}"></view>
   <view class="profile-modal-card flex-col align-center {{showProfileModal ? 'scale-in' : ''}}" wx:if="{{showProfileModal}}">

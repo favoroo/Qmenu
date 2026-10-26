@@ -35,6 +35,10 @@
         "value": "skills-lock.json"
       },
       {
+        "type": "file",
+        "value": "Q菜单-开发全过程与微信操作手册.md"
+      },
+      {
         "type": "folder",
         "value": "pages/discover"
       },

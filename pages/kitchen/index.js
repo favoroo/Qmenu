@@ -64,10 +64,6 @@ Page({
     timerSecondsLeft: 0,
     formattedTimeLeft: '00:00',
 
-    // Move to Category Modal variables
-    showMoveCategoryModal: false,
-    movingRecipe: null,
-
     // Animation gating
     animReady: false,
     badgeBump: false,
@@ -1102,9 +1098,6 @@ Page({
             if (this.data.selectedRecipe && this.data.selectedRecipe.id === id) {
               this.setData({ 'selectedRecipe.image': resolved });
             }
-            if (this.data.movingRecipe && this.data.movingRecipe.id === id) {
-              this.setData({ 'movingRecipe.image': resolved });
-            }
           }
         }).catch(err => console.warn('[kitchen] 重新解析菜谱图片失败', err));
       }
@@ -1242,114 +1235,6 @@ Page({
     const categoryId = this.data.activeCategoryId || '';
     wx.navigateTo({
       url: `/pages/recipe-add/index?categoryId=${categoryId}`
-    });
-  },
-
-  // Long press recipe card to show action menu (admin only)
-  onRecipeLongPress(e) {
-    if (!this.data.isAdmin) {
-      wx.showToast({
-        title: '仅群主可编辑菜谱',
-        icon: 'none',
-        duration: 1500
-      });
-      return;
-    }
-    
-    const recipe = e.currentTarget.dataset.recipe;
-    const self = this;
-    
-    wx.vibrateShort({ type: 'medium' });
-    
-    wx.showActionSheet({
-      itemList: ['编辑菜谱', '移动到分类', '删除菜谱'],
-      success(res) {
-        if (res.tapIndex === 0) {
-          // Edit recipe
-          wx.navigateTo({
-            url: `/pages/recipe-add/index?id=${recipe.id}`
-          });
-        } else if (res.tapIndex === 1) {
-          // Move to category - open category picker
-          self.setData({
-            movingRecipe: recipe,
-            showMoveCategoryModal: true
-          });
-        } else if (res.tapIndex === 2) {
-          // Delete recipe
-          wx.showModal({
-            title: '删除菜品',
-            content: `确定要删除菜品「${recipe.name}」吗？此操作不可恢复。`,
-            confirmColor: '#E07A5F',
-            async success(modalRes) {
-              if (modalRes.confirm) {
-                try {
-                  await db.deleteRecipe(recipe.id);
-                  self.loadData();
-                  wx.showToast({ title: '已删除', icon: 'success' });
-                  wx.vibrateShort();
-                } catch (err) {
-                  console.error('删除菜谱失败', err);
-                  wx.showToast({ title: '删除失败，请重试', icon: 'none' });
-                }
-              }
-            }
-          });
-        }
-      }
-    });
-  },
-
-  // --- Move to Category ---
-  closeMoveCategoryModal() {
-    this.setData({
-      showMoveCategoryModal: false,
-      movingRecipe: null
-    });
-  },
-
-  onMoveCategorySelect(e) {
-    const targetCategoryId = e.currentTarget.dataset.id;
-    const recipe = this.data.movingRecipe;
-
-    if (!recipe) return;
-
-    // If selecting current category, no need to move
-    if (recipe.categoryId === targetCategoryId) {
-      wx.showToast({ title: '已在该分类中', icon: 'none' });
-      this.closeMoveCategoryModal();
-      return;
-    }
-
-    const targetCategory = this.data.categories.find(c => c.id === targetCategoryId);
-    const targetName = targetCategory ? targetCategory.name : '未知分类';
-
-    const self = this;
-    wx.showModal({
-      title: '确认移动',
-      content: `将「${recipe.name}」移动到「${targetName}」？`,
-      confirmColor: '#005BCB',
-      async success(modalRes) {
-        if (modalRes.confirm) {
-          try {
-            await db.updateRecipe({
-              id: recipe.id,
-              categoryId: targetCategoryId
-            });
-
-            self.closeMoveCategoryModal();
-            self.loadData();
-
-            wx.showToast({
-              title: `已移至「${targetName}」`,
-              icon: 'success'
-            });
-          } catch (err) {
-            console.error('移动菜谱失败', err);
-            wx.showToast({ title: '移动失败，请重试', icon: 'none' });
-          }
-        }
-      }
     });
   },
 
