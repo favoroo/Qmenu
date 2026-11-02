@@ -187,6 +187,12 @@ h2{
   box-shadow:0 0 0 3px rgba(0,91,203,.14);
   animation:pulse 2.4s var(--ease) infinite;
 }
+.eyebrow .status-tag{
+  display:inline-flex;align-items:center;gap:4px;margin-left:4px;
+  padding:2px 9px;border-radius:100px;
+  background:rgba(212,163,115,.18);color:var(--warm-deep);
+  font-size:11.5px;font-weight:700;letter-spacing:.02em;
+}
 @keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(0,91,203,.14)}50%{box-shadow:0 0 0 7px rgba(0,91,203,.03)}}
 
 h1{
@@ -211,7 +217,14 @@ h1 em::after{
   font-size:clamp(15.5px,1.4vw,18px);line-height:1.78;color:var(--sub);
   max-width:44ch;margin:0 0 36px;
 }
-.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:52px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.hero-tip{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13px;color:var(--sub);margin:0 0 46px;line-height:1.5;
+}
+.hero-tip .tip-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--warm);flex:none;
+}
 .hero-stats{display:flex;flex-wrap:wrap;gap:clamp(26px,4vw,54px)}
 .stat{display:flex;flex-direction:column;gap:1px}
 .stat b{
@@ -730,6 +743,22 @@ h1 em::after{
   background:radial-gradient(circle,rgba(0,91,203,.55),transparent 66%);
 }
 .cta-card > *{position:relative;z-index:1}
+.cta-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  background:rgba(232,184,126,.15);border:1px solid rgba(232,184,126,.32);
+  color:#FFD79A;font-size:12.5px;font-weight:600;letter-spacing:.05em;
+  margin-bottom:18px;
+}
+.cta-badge .badge-dot{
+  width:7px;height:7px;border-radius:50%;background:#E8B87E;
+  box-shadow:0 0 0 3px rgba(232,184,126,.25);
+  animation:pulse-amber 2.2s infinite ease-in-out;
+}
+@keyframes pulse-amber{
+  0%,100%{box-shadow:0 0 0 3px rgba(232,184,126,.25)}
+  50%{box-shadow:0 0 0 7px rgba(232,184,126,.05)}
+}
 .cta-card h2{color:#fff;margin-bottom:18px;font-size:clamp(29px,3.5vw,44px)}
 .cta-card .cta-lede{color:rgba(255,255,255,.6);font-size:clamp(14.5px,1.3vw,16.5px);margin:0 0 32px;max-width:40ch;line-height:1.75}
 .search-pill{
@@ -746,6 +775,10 @@ h1 em::after{
   display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
   background:var(--blue);flex:none;margin-left:6px;
   box-shadow:0 6px 16px -8px rgba(0,91,203,1);
+}
+.search-pill.is-waiting i{
+  background:var(--warm-deep);
+  box-shadow:0 6px 16px -8px rgba(176,127,78,.85);
 }
 .search-pill svg{width:15px;height:15px}
 .qr-frame{
@@ -871,6 +904,14 @@ h1 em::after{
   .stat b{font-size:25px}
   .nav-cta{padding:0 16px;font-size:13px;height:36px}
   .brand-text{display:none}
+  .search-pill{
+    height:auto;padding:8px 10px 8px 16px;gap:8px;
+    max-width:100%;
+  }
+  .search-pill span{font-size:12px;white-space:nowrap}
+  .search-pill b{font-size:13.5px;white-space:nowrap}
+  .search-pill i{width:32px;height:32px;margin-left:auto}
+  .cta-badge{font-size:12px;padding:5px 12px}
   .footer-grid{flex-direction:column;align-items:flex-start;gap:18px}
 }
 @media (max-width:420px){
@@ -906,7 +947,7 @@ h1 em::after{
       <a href="#screens">界面</a>
       <a href="#tech">技术</a>
     </div>
-    <a href="#start" class="nav-cta">开始使用</a>
+    <a href="#start" class="nav-cta">敬请期待</a>
   </div>
 </nav>
 
@@ -914,7 +955,7 @@ h1 em::after{
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div class="hero-copy">
-      <p class="eyebrow reveal" style="--d:0ms"><span class="pip"></span>微信小程序 · 群组协作点菜</p>
+      <p class="eyebrow reveal" style="--d:0ms"><span class="pip"></span>微信小程序 · 群组协作点菜<span class="status-tag">暂未上线 · 敬请期待</span></p>
       <h1 class="reveal" style="--d:80ms">
         <span class="line">把每一顿饭</span>
         <span class="line">变成 <em>一起</em> 的事</span>
@@ -924,11 +965,14 @@ h1 em::after{
       </p>
       <div class="hero-actions reveal" style="--d:250ms">
         <a href="#start" class="btn btn-primary">
-          微信搜索「Q 菜单」
+          暂未上线 · 敬请期待
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12 5l7 7-7 7"/></svg>
         </a>
         <a href="#features" class="btn btn-ghost">看看能做什么</a>
       </div>
+      <p class="hero-tip reveal" style="--d:290ms">
+        <span class="tip-dot"></span>小程序目前处于测试筹备阶段，暂未正式发布上线。
+      </p>
       <div class="hero-stats reveal" style="--d:330ms">
         <div class="stat"><b>20</b><span>人群组上限</span></div>
         <div class="stat"><b>6</b><span>位邀请码</span></div>
@@ -1378,12 +1422,16 @@ h1 em::after{
   <div class="wrap">
     <div class="cta-card reveal">
       <div>
-        <h2>今天，想做点什么菜？</h2>
-        <p class="cta-lede">打开微信，搜索小程序「Q 菜单」，建个群，把想一起吃饭的人拉进来就好。</p>
-        <div class="search-pill">
-          <span>微信搜索</span>
-          <b>Q 菜单</b>
-          <i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg></i>
+        <div class="cta-badge">
+          <span class="badge-dot"></span>
+          <span>暂未上线 · 敬请期待</span>
+        </div>
+        <h2>用心打磨，<br>即将与你见面</h2>
+        <p class="cta-lede">「Q 菜单」微信小程序目前正处于筹备与优化阶段，暂未正式上线发布。我们正在用心做好每一处细节，期待早日陪伴你的每一顿饭！</p>
+        <div class="search-pill is-waiting">
+          <span>微信小程序</span>
+          <b>暂未上线 · 敬请期待</b>
+          <i><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></i>
         </div>
       </div>
       <div>
@@ -1393,10 +1441,10 @@ h1 em::after{
           <div class="qr-fallback">
             <span class="qr-logo"><img src="assets/logo.jpg" alt=""></span>
             <b>Q 菜单</b>
-            <span>微信搜索小程序<br>即可开始</span>
+            <span>小程序暂未正式上线<br>敬请期待</span>
           </div>
         </div>
-        <p class="cta-caption">扫码，或在微信里搜索</p>
+        <p class="cta-caption">暂未上线 · 敬请期待</p>
       </div>
     </div>
   </div>
